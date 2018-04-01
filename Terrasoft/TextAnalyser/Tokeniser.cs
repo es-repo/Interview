@@ -20,16 +20,6 @@ namespace Terrasoft
     }
 
     /// <summary>
-    /// Tokenise input text using <see cref="TokenBuilder"/>s recieved in constructor. 
-    /// </summary>
-    public IEnumerable<Token> Tokenise(string text)
-    {
-      using(MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(text)))
-      using(StreamReader sr = new StreamReader(ms))
-        return Tokenise(sr);
-    }
-
-    /// <summary>
     /// Tokenise input text stream using <see cref="TokenBuilder"/>s recieved in constructor. 
     /// </summary>
     public IEnumerable<Token> Tokenise(StreamReader stream)
