@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Configuration;
 using System.Diagnostics;
 using System.IO;
-using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
 
 namespace Altium.BigSorter
 {
@@ -11,10 +8,11 @@ namespace Altium.BigSorter
   {
     static void Main(string[] args)
     {
-      string inputPath = args.Length > 0 ? args[0] : "table.txt";
-      string outputPath = Path.GetFileNameWithoutExtension(inputPath) + "-sorted" + 
+      string inputPath = args.Length > 0 ? args[0] : @"C:\Projects\Interview\Altium\table-50MB.txt";
+      string outputFile = Path.GetFileNameWithoutExtension(inputPath) + "-sorted" + 
         Path.GetExtension(inputPath);
-      long bufferSize = args.Length > 1 ? long.Parse(args[1]) : 1024 * 1024 * 1024;
+      string outputPath = Path.Combine(Path.GetDirectoryName(inputPath), outputFile);
+      long bufferSize = args.Length > 1 ? long.Parse(args[1]) : 1024 * 1024 * 256;
 
       Stopwatch sw = new Stopwatch();
       Console.WriteLine($"Sorting file: {inputPath} ...");
