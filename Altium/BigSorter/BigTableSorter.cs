@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace Altium.BigSorter
 {
@@ -79,8 +78,6 @@ namespace Altium.BigSorter
       foreach (RecordsBuffer block in blocks)
       {
         block.Sort(field);
-        Console.WriteLine("Sorted block with " + block.Records.Count + " records");
-        GC.Collect();
         if (blockIndex == 0)
         {
           firstBlock = block;
