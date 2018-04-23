@@ -12,23 +12,16 @@ namespace Altium.BigSorter.Tests
     {
       MemoryStream ms = new MemoryStream();
       StreamWriter sw = new StreamWriter(ms);
-      BigArray<byte> buffer = new BigArray<byte>(32);
-      ArrayView<byte> aw = new ArrayView<byte>(buffer, 0);
 
       RecordsBufferedWriter writer = new RecordsBufferedWriter(
-        new RecordParser(), new RecordBytesConverter(), sw, aw);
+        new RecordParser(), sw, 16);
 
-      ArrayView<byte>[] records = new byte[][]
+      object[][] records = new object[][]
       {
-        new byte[]{0,0,0,1,0,(byte)'a'},
-        new byte[]{0,0,0,2,0,(byte)'b',0,(byte)'c'},
-        new byte[]{0,0,0,3,0,(byte)'d'},
-      }.Select(r => 
-      {
-        BigArray<byte> a = new BigArray<byte>((long)r.Length);
-        a.CopyFrom(r);
-        return new ArrayView<byte>(a, 0);
-      }).ToArray();
+        new object[]{1, "a"},
+        new object[]{2, "bc"},
+        new object[]{3, "d"}
+      };
 
       writer.WriteRecord(records[0]);
       sw.Flush();

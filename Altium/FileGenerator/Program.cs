@@ -11,14 +11,14 @@ namespace Altium
       string filePath = args.Length > 0 ? args[0] : "table.txt";
       long maxSize = args.Length > 1 ? long.Parse(args[1]) : 1024*1024*10;
       Stopwatch sw = new Stopwatch();
-      Console.WriteLine("Generating table file: " + filePath);
+      Console.WriteLine($"Generating file: {filePath} ...");
       sw.Start();
-      GenerateTable(filePath, maxSize);
+      GenerateFile(filePath, maxSize);
       sw.Stop();
       Console.WriteLine($"Done in {sw.Elapsed}");
     }
 
-    private static void GenerateTable(string filePath, long maxSize)
+    private static void GenerateFile(string filePath, long maxSize)
     {
       RecordGenerator stringGenerator = new RecordGenerator();
       using(FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))

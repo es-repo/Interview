@@ -17,11 +17,7 @@ namespace Altium.BigSorter.Tests
 
       MemoryStream stream = StringsToStream(records);
 
-      BigArray<byte> buffer = new BigArray<byte>(32);
-      ArrayView<byte> av = new ArrayView<byte>(buffer, 0);
-
-      RecordsReader recordsReader =
-        new RecordsReader(new RecordParser(), new RecordBytesConverter(), new StreamReader(stream), av);
+      RecordsReader recordsReader = new RecordsReader(13, new RecordParser(), new StreamReader(stream));
 
       object[][][] expectedRecordsPerBlock = new object[][][]
       {
@@ -40,11 +36,11 @@ namespace Altium.BigSorter.Tests
       int i = 0;
       foreach (RecordsBuffer rb in recordsReader.ReadBlocks())
       {
-        Assert.Equal((long) expectedRecordsPerBlock[i].Length, rb.RecordsCount);
+        Assert.Equal(expectedRecordsPerBlock[i].Length, rb.Records.Count);
 
-        for (long j = 0; j < rb.RecordsCount; j++)
+        for (int j = 0; j < rb.Records.Count; j++)
         {
-          Assert.Equal(expectedRecordsPerBlock[i][j], rb.GetRecord(j));
+          Assert.Equal(expectedRecordsPerBlock[i][j], rb.Records[j]);
         }
         i++;
       }
@@ -66,12 +62,8 @@ namespace Altium.BigSorter.Tests
 
       MemoryStream stream = StringsToStream(records);
 
-      BigArray<byte> buffer = new BigArray<byte>(28);
-      ArrayView<byte> av = new ArrayView<byte>(buffer, 0);
-
       StreamReader sr = new StreamReader(stream);
-      RecordsReader recordsReader =
-        new RecordsReader(new RecordParser(), new RecordBytesConverter(), sr, av, 1);
+      RecordsReader recordsReader = new RecordsReader(12, new RecordParser(), sr, 1);
 
       object[][][][] expectedRecordsPerBlock = new object[][][][]
       {
@@ -118,93 +110,15 @@ namespace Altium.BigSorter.Tests
         int i = 0;
         foreach (RecordsBuffer rb in recordsReader.ReadBlocks())
         {
-          Assert.Equal((long) expectedRecordsPerBlock[k][i].Length, rb.RecordsCount);
+          Assert.Equal(expectedRecordsPerBlock[k][i].Length, rb.Records.Count);
 
-          for (long j = 0; j < rb.RecordsCount; j++)
+          for (int j = 0; j < rb.Records.Count; j++)
           {
-            Assert.Equal(expectedRecordsPerBlock[k][i][j], rb.GetRecord(j));
+            Assert.Equal(expectedRecordsPerBlock[k][i][j], rb.Records[j]);
           }
           i++;
         }
         k++;
-      }
-    }
-
-    [Fact]
-    public void TestReadBlocksRaw()
-    {
-      byte[][] rawRecords = new byte[][]
-      {
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'a' },
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 2, 0, (byte) 'b' },
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 3, 0, (byte) 'c' }
-      };
-
-      MemoryStream stream = BytesToStream(rawRecords);
-
-      BigArray<byte> buffer = new BigArray<byte>(32);
-      ArrayView<byte> av = new ArrayView<byte>(buffer, 0);
-
-      RecordsReader recordsReader =
-        new RecordsReader(new RecordParser(), new RecordBytesConverter(), stream, av);
-
-      object[][][] expectedRecordsPerBlock = new object[][][]
-      {
-        new object[][]
-        {
-        new object[] { 1, "a" },
-        new object[] { 2, "b" }
-        },
-
-        new object[][]
-        {
-        new object[] { 3, "c" },
-        }
-      };
-
-      int i = 0;
-      foreach (RecordsBuffer rb in recordsReader.ReadBlocksRaw())
-      {
-        Assert.Equal((long) expectedRecordsPerBlock[i].Length, rb.RecordsCount);
-
-        for (long j = 0; j < rb.RecordsCount; j++)
-        {
-          Assert.Equal(expectedRecordsPerBlock[i][j], rb.GetRecord(j));
-        }
-        i++;
-      }
-    }
-
-    [Fact]
-    public void TestReadRecordBytes()
-    {
-      byte[][] rawRecords = new byte[][]
-      {
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'a' },
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 2, 0, (byte) 'b' },
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 3, 0, (byte) 'c' }
-      };
-
-      MemoryStream stream = BytesToStream(rawRecords);
-
-      BigArray<byte> buffer = new BigArray<byte>(32);
-      ArrayView<byte> av = new ArrayView<byte>(buffer, 0);
-
-      RecordsReader recordsReader =
-        new RecordsReader(new RecordParser(), new RecordBytesConverter(), stream, av);
-
-      byte[][] expectedRecordBytes = new byte[][]
-      {
-        new byte[] { 0, 0, 0, 1, 0, (byte) 'a' },
-        new byte[] { 0, 0, 0, 2, 0, (byte) 'b' },
-        new byte[] { 0, 0, 0, 3, 0, (byte) 'c' }
-      };
-
-      int i = 0;
-      foreach (ArrayView<byte> r in recordsReader.ReadRecordBytes())
-      {
-        Assert.Equal(expectedRecordBytes[i], r.Enumerate());
-        i++;
       }
     }
 
@@ -215,18 +129,6 @@ namespace Altium.BigSorter.Tests
       foreach (string s in ss)
         sw.WriteLine(s);
       sw.Flush();
-      ms.Position = 0;
-      return ms;
-    }
-
-    private static MemoryStream BytesToStream(byte[][] bytes)
-    {
-      MemoryStream ms = new MemoryStream();
-      foreach (byte[] bb in bytes)
-        foreach (byte b in bb)
-          ms.WriteByte(b);
-
-      ms.Flush();
       ms.Position = 0;
       return ms;
     }

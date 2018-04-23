@@ -8,14 +8,12 @@ namespace Altium.BigSorter
   public class BigTableSorter
   {
     private readonly IRecordParser _recordParser;
-    private readonly IRecordBytesConverter _recordBytesConverter;
-    private BigArray<byte> _buffer;
+    private readonly long _bufferSizeInBytes;    
 
-    public BigTableSorter(BigArray<byte> buffer, IRecordParser recordParser, IRecordBytesConverter recordBytesConverter)
+    public BigTableSorter(long bufferSizeInBytes, IRecordParser recordParser)
     {
-      _buffer = buffer;
+      _bufferSizeInBytes = bufferSizeInBytes;
       _recordParser = recordParser;
-      _recordBytesConverter = recordBytesConverter;
     }
 
     public void Sort(Stream input, int field, Stream output, ITempStreams tempStreams)
@@ -39,8 +37,7 @@ namespace Altium.BigSorter
           output.Position = 0;
           StreamReader sr = new StreamReader(input);
           StreamWriter sw = new StreamWriter(output);
-          ArrayView<byte> av = new ArrayView<byte>(_buffer, 0);
-          RecordsReader recordsReader = new RecordsReader(_recordParser, _recordBytesConverter, sr, av, prevField);
+          RecordsReader recordsReader = new RecordsReader(_bufferSizeInBytes, _recordParser, sr, prevField);
           while (!recordsReader.IsEnd)
           {
             Sort(recordsReader, fields[i], sw, tempStreams);
@@ -91,9 +88,9 @@ namespace Altium.BigSorter
         }
 
         using(Stream blockStream = tempStreams.CreateBlockStream(blockIndex))
-        {
-          RecordsWriter recordsWriter = new RecordsWriter(_recordParser, blockStream);
-          recordsWriter.WriteRecordsRaw(block);
+        using(StreamWriter sw = new StreamWriter(blockStream)){
+          RecordsWriter recordsWriter = new RecordsWriter(_recordParser, sw);
+          recordsWriter.WriteRecords(block);
         }
         blockIndex++;
       }
@@ -102,30 +99,23 @@ namespace Altium.BigSorter
 
     private void MergeBlocks(ITempStreams tempStreams, int blockCount, int field, StreamWriter output)
     {
-      long blockLen = _buffer.Length / ((long) blockCount + 1);
-
-      List<ArrayView<byte>> blockBuffers = new List<ArrayView<byte>>();
-      for (int i = 0; i < blockCount; i++)
-      {
-        blockBuffers.Add(new ArrayView<byte>(_buffer, (int) i * blockLen, blockLen));
-      }
-
-      ArrayView<byte> outputBuffer = new ArrayView<byte>(_buffer, (long) blockCount * blockLen);
+      long blockLen = _bufferSizeInBytes / ((long) blockCount + 1);
 
       List<Stream> blockStreams = new List<Stream>();
       try
       {
-        List<IEnumerator<ArrayView<byte>> > blockRecordsEnumerators = new List<IEnumerator<ArrayView<byte>> > ();
+        List<IEnumerator<object[]> > blockRecordsEnumerators = new List<IEnumerator<object[]> > ();
         for (int i = 0; i < blockCount; i++)
         {
           Stream blockStream = tempStreams.CreateBlockStream(i);
+          StreamReader sr = new StreamReader(blockStream);
           blockStreams.Add(blockStream);
-          RecordsReader blockReader = new RecordsReader(_recordParser, _recordBytesConverter, blockStream, blockBuffers[i]);
-          blockRecordsEnumerators.Add(blockReader.ReadRecordBytes().GetEnumerator());
+          RecordsReader blockReader = new RecordsReader(blockLen, _recordParser, sr);
+          blockRecordsEnumerators.Add(blockReader.ReadRecords().GetEnumerator());
         }
 
         RecordsBufferedWriter recordsWriter =
-          new RecordsBufferedWriter(_recordParser, _recordBytesConverter, output, outputBuffer);
+          new RecordsBufferedWriter(_recordParser, output, _bufferSizeInBytes);
 
         MergeBlocks(blockRecordsEnumerators, recordsWriter, field, output);
       }
@@ -136,11 +126,10 @@ namespace Altium.BigSorter
       }
     }
 
-    private void MergeBlocks(List<IEnumerator<ArrayView<byte>> > blockRecordsEnumerators,
+    private void MergeBlocks(List<IEnumerator<object[]> > blockRecordsEnumerators,
       RecordsBufferedWriter recordsWriter, int field, StreamWriter outputStream)
     {
-      var currentRecordComparer = new EnumeratorCurrentComparer<ArrayView<byte>>(
-        new RecordComparer(_recordBytesConverter, field));
+      var currentRecordComparer = new EnumeratorCurrentComparer<object[]>(new RecordComparer(field));
 
       foreach (var e in blockRecordsEnumerators)
       {
@@ -151,7 +140,7 @@ namespace Altium.BigSorter
 
       while (blockRecordsEnumerators.Count > 0)
       {
-        IEnumerator<ArrayView<byte>> min = blockRecordsEnumerators[0];
+        IEnumerator<object[]> min = blockRecordsEnumerators[0];
         recordsWriter.WriteRecord(min.Current);
 
         bool empty = !min.MoveNext();

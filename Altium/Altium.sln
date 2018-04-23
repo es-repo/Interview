@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigSorter", "BigSorter\BigS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigSorter.Tests", "BigSorter.Tests\BigSorter.Tests.csproj", "{49562011-DDD5-4668-ABFA-116D652686E5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableGenerator", "TableGenerator\TableGenerator.csproj", "{D2DD6436-5272-4B62-AD2C-A0712BAEE55B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileGenerator", "FileGenerator\FileGenerator.csproj", "{D2DD6436-5272-4B62-AD2C-A0712BAEE55B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

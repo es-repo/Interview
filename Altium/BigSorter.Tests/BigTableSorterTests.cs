@@ -43,7 +43,6 @@ namespace Altium.BigSorter.Tests
         _blocks.Add(null);
         return new MemoryStreamWithOnDisposeHandler(ms =>
         {
-          ms.Position = 0;
           _blocks[blockIndex] = ms.ToArray();
         });
       }
@@ -61,8 +60,7 @@ namespace Altium.BigSorter.Tests
     }
 
     public void Dispose()
-    {
-    }
+    { }
   }
 
   public class BigTableSorterTests
@@ -96,9 +94,7 @@ namespace Altium.BigSorter.Tests
         "1. d",
       };
 
-      BigArray<byte> buffer = new BigArray<byte>(14 * 5);
-
-      BigTableSorter tableSorter = new BigTableSorter(buffer, new RecordParser(), new RecordBytesConverter());
+      BigTableSorter tableSorter = new BigTableSorter(6 * 5, new RecordParser());
 
       MemoryStream input = StringsToStream(records);
       MemoryStream output = new MemoryStream();
@@ -108,52 +104,59 @@ namespace Altium.BigSorter.Tests
 
       Assert.Equal(4, tempStreams.Blocks[0].Count);
 
-      byte[][] expectedBlockBytes = new byte[][]
+      string[][] expectedBlockRecords = new string[][]
       {
-        // 1. a
-        // 2. a
-        // 1. c
-        // 1. d
-        // 2. e
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'a', 0, 0, 0, 6, 0, 0, 0, 2, 0, (byte) 'a', 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'c', 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'd', 0, 0, 0, 6, 0, 0, 0, 2, 0, (byte) 'e' },
+        new string[]
+        {
+        "2. a",
+        "1. a",
+        "1. c",
+        "1. d",
+        "2. e",
+        },
 
-        // 2. a 
-        // 3. a
-        // 1. b
-        // 1. c
-        // 2. e
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 2, 0, (byte) 'a', 0, 0, 0, 6, 0, 0, 0, 3, 0, (byte) 'a', 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'b', 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'c', 0, 0, 0, 6, 0, 0, 0, 2, 0, (byte) 'e' },
+        new string[]
+        {
+        "3. a",
+        "2. a",
+        "1. b",
+        "1. c",
+        "2. e",
+        },
 
-        // 3. a
-        // 1. a
-        // 1. b
-        // 1. d
-        // 1. e
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 3, 0, (byte) 'a', 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'a', 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'b', 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'd', 0, 0, 0, 6, 0, 0, 0, 2, 0, (byte) 'e' },
+        new string[]
+        {
+        "1. a",
+        "3. a",
+        "1. b",
+        "1. d",
+        "2. e",
+        },
 
-        // 1. a
-        // 2. a
-        // 1. c
-        // 1. d
-        new byte[] { 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'a', 0, 0, 0, 6, 0, 0, 0, 2, 0, (byte) 'a', 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'c', 0, 0, 0, 6, 0, 0, 0, 1, 0, (byte) 'd' }
+        new string[]
+        {
+        "2. a",
+        "1. a",
+        "1. c",
+        "1. d",
+        }
       };
 
-      for (int i = 0; i < expectedBlockBytes.Length; i++)
+      for (int i = 0; i < expectedBlockRecords.Length; i++)
       {
-        Assert.Equal(expectedBlockBytes[i], tempStreams.Blocks[0][i]);
+        Assert.Equal(expectedBlockRecords[i], BytesToStrings(tempStreams.Blocks[0][i]));
       }
-
       string[] expectedRecords = new string[]
       {
+        "2. a",
+        "3. a",
         "1. a",
         "2. a",
-        "2. a",
-        "3. a",
-        "3. a",
+        "1. a",
 
-        "1. a",
-        "1. a",
+        "3. a",
         "2. a",
+        "1. a",
         "1. b",
         "1. b",
 
@@ -200,9 +203,7 @@ namespace Altium.BigSorter.Tests
         "1. d",
       };
 
-      BigArray<byte> buffer = new BigArray<byte>(14 * records.Length);
-
-      BigTableSorter tableSorter = new BigTableSorter(buffer, new RecordParser(), new RecordBytesConverter());
+      BigTableSorter tableSorter = new BigTableSorter(6 * records.Length, new RecordParser());
 
       MemoryStream input = StringsToStream(records);
       MemoryStream output = new MemoryStream();
@@ -214,14 +215,14 @@ namespace Altium.BigSorter.Tests
 
       string[] expectedRecords = new string[]
       {
+        "2. a",
+        "2. a",
         "1. a",
         "2. a",
-        "2. a",
+        "3. a",
+        "1. a",
         "1. a",
         "3. a",
-        "3. a",
-        "2. a",
-        "1. a",
         "1. b",
         "1. b",
         "1. c",
@@ -276,9 +277,7 @@ namespace Altium.BigSorter.Tests
         "6. a",
       };
 
-      BigArray<byte> buffer = new BigArray<byte>(14 * 6);
-
-      BigTableSorter tableSorter = new BigTableSorter(buffer, new RecordParser(), new RecordBytesConverter());
+      BigTableSorter tableSorter = new BigTableSorter(6 * 6, new RecordParser());
 
       MemoryStream input = StringsToStream(records);
       MemoryStream output = new MemoryStream();
@@ -333,6 +332,21 @@ namespace Altium.BigSorter.Tests
       sw.Flush();
       ms.Position = 0;
       return ms;
+    }
+
+    private static List<string> BytesToStrings(byte[] bytes)
+    {
+      using(MemoryStream ms = new MemoryStream(bytes))
+      using(StreamReader sr = new StreamReader(ms))
+      {
+        List<string> list = new List<string>();
+        string s = null;
+        while ((s = sr.ReadLine()) != null)
+        {
+          list.Add(s);
+        }
+        return list;
+      }
     }
   }
 }

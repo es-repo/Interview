@@ -6,30 +6,28 @@ namespace Altium.BigSorter
   public class RecordsBufferedWriter
   {
     private readonly RecordsWriter _recordsWriter;
-    private readonly ArrayView<byte> _buffer;
+    private readonly long _bufferSizeInBytes;    
     private RecordsBuffer _recordsBuffer;
-    private readonly IRecordBytesConverter _recordBytesConverter;
 
-    public RecordsBufferedWriter(IRecordParser recordParser, IRecordBytesConverter recordBytesConverter,
-      TextWriter textWriter, ArrayView<byte> buffer)
+    public RecordsBufferedWriter(IRecordParser recordParser,
+      TextWriter textWriter, long bufferSizeInBytes)
     {
       _recordsWriter = new RecordsWriter(recordParser, textWriter);
-      _buffer = buffer;
-      _recordsBuffer = new RecordsBuffer(buffer, recordBytesConverter);
-      _recordBytesConverter = recordBytesConverter;
+      _bufferSizeInBytes = bufferSizeInBytes;
+      _recordsBuffer = new RecordsBuffer(bufferSizeInBytes);
     }
 
-    public void WriteRecord(ArrayView<byte> recordBytes)
+    public void WriteRecord(object[] values)
     {
-      bool added = _recordsBuffer.AddRecordBytes(recordBytes);
+      bool added = _recordsBuffer.AddRecord(values);
       if (!added)
       {
-        if (_recordsBuffer.RecordsCount == 0)
+        if (_recordsBuffer.Records.Count == 0)
           throw new InvalidOperationException("Buffer is too small. Can't add even one record.");
 
         Flush();
-        _recordsBuffer = new RecordsBuffer(_buffer, _recordBytesConverter);
-        added = _recordsBuffer.AddRecordBytes(recordBytes);
+        _recordsBuffer = new RecordsBuffer(_bufferSizeInBytes);
+        added = _recordsBuffer.AddRecord(values);
         if (!added)
           throw new InvalidOperationException("Can't add record.");
       }

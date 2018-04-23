@@ -7,30 +7,17 @@ namespace Altium.BigSorter
 {
   public class RecordsReader
   {
+    private readonly long _bufferSizeInBytes;
     private readonly IRecordParser _recordParser;
-    private readonly IRecordBytesConverter _recordBytesConverter;
-    private readonly Stream _stream;
-    private ArrayView<byte> _buffer;
     private readonly StreamReader _streamReader;
     private readonly int _readWhileEqualFieldIndex;
     private Object[] _recordAhead;
 
-    public RecordsReader(IRecordParser recordParser, IRecordBytesConverter recordBytesConverter,
-      Stream stream, ArrayView<byte> buffer)
+    public RecordsReader(long bufferSizeInBytes, IRecordParser recordParser, StreamReader streamReader, int readWhileEqualToFieldIndex = -1)
     {
+      _bufferSizeInBytes = bufferSizeInBytes;
       _recordParser = recordParser;
-      _recordBytesConverter = recordBytesConverter;
-      _stream = stream;
-      _buffer = buffer;
-    }
-
-    public RecordsReader(IRecordParser recordParser, IRecordBytesConverter recordBytesConverter,
-      StreamReader streamReader, ArrayView<byte> buffer, int readWhileEqualToFieldIndex = -1)
-    {
-      _recordParser = recordParser;
-      _recordBytesConverter = recordBytesConverter;
       _streamReader = streamReader;
-      _buffer = buffer;
       _readWhileEqualFieldIndex = readWhileEqualToFieldIndex;
     }
 
@@ -42,7 +29,7 @@ namespace Altium.BigSorter
     {
       IsLastBlock = false;
       string line = null;
-      RecordsBuffer recordsBuffer = new RecordsBuffer(_buffer, _recordBytesConverter);
+      RecordsBuffer recordsBuffer = new RecordsBuffer(_bufferSizeInBytes);
       object valueToCompare = null;
 
       if (_recordAhead != null)
@@ -76,66 +63,30 @@ namespace Altium.BigSorter
         bool added = recordsBuffer.AddRecord(record);
         if (!added)
         {
-          if (recordsBuffer.RecordsCount == 0)
+          if (recordsBuffer.Records.Count == 0)
             throw new InvalidOperationException("Buffer is too small. Can't add even one record.");
 
           yield return recordsBuffer;
-          recordsBuffer = new RecordsBuffer(_buffer, _recordBytesConverter);
+          recordsBuffer = new RecordsBuffer(_bufferSizeInBytes);
           recordsBuffer.AddRecord(record);
         }
       }
 
-      if (recordsBuffer.RecordsCount > 0)
+      if (recordsBuffer.Records.Count > 0)
       {
         IsLastBlock = true;
         yield return recordsBuffer;
       }
     }
 
-    public IEnumerable<RecordsBuffer> ReadBlocksRaw()
+    public IEnumerable<object[]> ReadRecords()
     {
-      RecordsBuffer recordsBuffer = new RecordsBuffer(_buffer, _recordBytesConverter);
-      long recordLen = 0;
-      while (ReadValue(recordsBuffer.SizeOfRecordLengthType, out recordLen))
-      {
-        bool added = recordsBuffer.AddRecordBytes(_stream, recordLen);
-        if (!added)
-        {
-          if (recordsBuffer.RecordsCount == 0)
-            throw new InvalidOperationException("Buffer is too small. Can't add even one record.");
-
-          yield return recordsBuffer;
-          recordsBuffer = new RecordsBuffer(_buffer, _recordBytesConverter);
-          recordsBuffer.AddRecordBytes(_stream, recordLen);
-        }
-      }
-
-      if (recordsBuffer.RecordsCount > 0)
-        yield return recordsBuffer;
-    }
-
-    private bool ReadValue(int sizeOfValue, out long value)
-    {
-      value = 0;
-      for (int i = 0; i < sizeOfValue; i++)
-      {
-        value <<= 8;
-        int b = _stream.ReadByte();
-        if (b == -1)
-          return false;
-        value += (int) b;
-      }
-      return true;
-    }
-
-    public IEnumerable<ArrayView<byte>> ReadRecordBytes()
-    {
-      IEnumerable<RecordsBuffer> blocks = ReadBlocksRaw();
+      IEnumerable<RecordsBuffer> blocks = ReadBlocks();
       foreach (RecordsBuffer block in blocks)
       {
-        for (long i = 0; i < block.RecordsCount; i++)
+        for (int i = 0; i < block.Records.Count; i++)
         {
-          yield return block.GetRecordBytes(i);
+          yield return block.Records[i];
         }
       }
     }

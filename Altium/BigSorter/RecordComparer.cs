@@ -1,39 +1,28 @@
+using System;
 using System.Collections.Generic;
 
 namespace Altium.BigSorter
 {
-  public class RecordComparer : IComparer<ArrayView<byte>>
+  public class RecordComparer : IComparer<object[]>
   {
-    private readonly IRecordBytesConverter _recordBytesConverter;
     private readonly int _fieldIndex;
 
-    public RecordComparer(IRecordBytesConverter recordBytesConverter, int fieldIndex)
+    public RecordComparer(int fieldIndex)
     {
-      _recordBytesConverter = recordBytesConverter;
       _fieldIndex = fieldIndex;
     }
 
-    public int Compare(ArrayView<byte> recordA, ArrayView<byte> recordB)
+    public int Compare(object[] x, object[] y)
     {
-      ArrayView<byte> aValueBytes = _recordBytesConverter.GetValueBytes(recordA, _fieldIndex);
-      ArrayView<byte> bValueBytes = _recordBytesConverter.GetValueBytes(recordB, _fieldIndex);
-      long minLen = aValueBytes.Length < bValueBytes.Length ? aValueBytes.Length : bValueBytes.Length;
-      for (long i = 0; i < minLen; i++)
+      switch (_fieldIndex)
       {
-        if (aValueBytes[i] < bValueBytes[i])
-          return -1;
-
-        if (aValueBytes[i] > bValueBytes[i])
-          return 1;
+        case 0:
+          return (int) x[0] - (int) y[0];
+        case 1:
+          return ((string) x[1]).CompareTo((string) y[1]);
+        default: 
+          return 0;
       }
-
-      if (aValueBytes.Length < bValueBytes.Length)
-        return -1;
-
-      if (aValueBytes.Length > bValueBytes.Length)
-        return 1;
-
-      return 0;
     }
   }
 }
