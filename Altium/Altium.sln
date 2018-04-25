@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigSorter.Tests", "BigSorte
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileGenerator", "FileGenerator\FileGenerator.csproj", "{D2DD6436-5272-4B62-AD2C-A0712BAEE55B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Experiments", "Experiments\Experiments.csproj", "{F6A1461E-7304-4D97-83A2-A6728EFCAA02}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,5 +60,17 @@ Global
 		{D2DD6436-5272-4B62-AD2C-A0712BAEE55B}.Release|x64.Build.0 = Release|x64
 		{D2DD6436-5272-4B62-AD2C-A0712BAEE55B}.Release|x86.ActiveCfg = Release|x86
 		{D2DD6436-5272-4B62-AD2C-A0712BAEE55B}.Release|x86.Build.0 = Release|x86
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Debug|x64.ActiveCfg = Debug|x64
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Debug|x64.Build.0 = Debug|x64
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Debug|x86.ActiveCfg = Debug|x86
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Debug|x86.Build.0 = Debug|x86
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Release|x64.ActiveCfg = Release|x64
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Release|x64.Build.0 = Release|x64
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Release|x86.ActiveCfg = Release|x86
+		{F6A1461E-7304-4D97-83A2-A6728EFCAA02}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 EndGlobal

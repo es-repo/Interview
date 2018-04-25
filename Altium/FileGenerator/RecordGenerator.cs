@@ -43,7 +43,7 @@ namespace Altium
       while (true)
       {
         string s = Generate();
-        length += s.Length;
+        length += s.Length + 2;
         if (length > maxTotalLength)
           break;
 

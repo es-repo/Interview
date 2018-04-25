@@ -1,94 +1,93 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace Altium.BigSorter
 {
   public class RecordsReader
   {
-    private readonly long _bufferSizeInBytes;
-    private readonly IRecordParser _recordParser;
-    private readonly StreamReader _streamReader;
-    private readonly int _readWhileEqualFieldIndex;
-    private Object[] _recordAhead;
+    private readonly ArrayView<byte> _bufferView;
+    private readonly CreateRecordComparer _createRecordComparer;
+    private readonly Stream _stream;
 
-    public RecordsReader(long bufferSizeInBytes, IRecordParser recordParser, StreamReader streamReader, int readWhileEqualToFieldIndex = -1)
+    public RecordsReader(ArrayView<byte> bufferView, Stream stream, CreateRecordComparer createRecordComparer)
     {
-      _bufferSizeInBytes = bufferSizeInBytes;
-      _recordParser = recordParser;
-      _streamReader = streamReader;
-      _readWhileEqualFieldIndex = readWhileEqualToFieldIndex;
+      _bufferView = bufferView;
+      _createRecordComparer = createRecordComparer;
+      _stream = stream;
     }
 
-    public bool IsLastBlock { get; private set; }
-
-    public bool IsEnd { get { return _streamReader.EndOfStream && _recordAhead == null;}}
+    public bool IsLastBlock {get; private set;}
 
     public IEnumerable<RecordsBuffer> ReadBlocks()
     {
       IsLastBlock = false;
-      string line = null;
-      RecordsBuffer recordsBuffer = new RecordsBuffer(_bufferSizeInBytes);
-      object valueToCompare = null;
-
-      if (_recordAhead != null)
+      int offset = _bufferView.Start;
+      int count = _bufferView.Length;
+      int bytesCount;
+      int unfinishedRecordLen = 0;
+      while ((bytesCount = _stream.Read(_bufferView.Array, offset, count)) > 0 || unfinishedRecordLen > 0)
       {
-        valueToCompare = _recordAhead[_readWhileEqualFieldIndex];
-        recordsBuffer.AddRecord(_recordAhead);
-        _recordAhead = null;
-      }
+        bytesCount += unfinishedRecordLen;
+        int unfinishedRecordStart = -1;
+        List<RecordInfo> records = GetRecordsInfo(bytesCount, out unfinishedRecordStart);
 
-      while ((line = _streamReader.ReadLine()) != null)
-      {
-        if (line == "")
-          continue;
-
-        object[] record = _recordParser.Parse(line).ToArray();
-
-        if (_readWhileEqualFieldIndex >= 0)
+        unfinishedRecordLen = 0;
+        if (unfinishedRecordStart != -1)
         {
-          object value = record[_readWhileEqualFieldIndex];
-          if (valueToCompare == null)
-          {
-            valueToCompare = value;
-          }
-          else if (!value.Equals(valueToCompare))
-          {
-            _recordAhead = record;
-            break;
-          }
+          unfinishedRecordLen = bytesCount - unfinishedRecordStart + _bufferView.Start;
         }
+        int recordsBytesCount = bytesCount - unfinishedRecordLen;
 
-        bool added = recordsBuffer.AddRecord(record);
-        if (!added)
+        IsLastBlock = _stream.Position == _stream.Length;
+        yield return new RecordsBuffer(
+          new ArrayView<byte>(_bufferView, 0, recordsBytesCount),
+          records,
+          _createRecordComparer);
+
+        offset = _bufferView.Start + unfinishedRecordLen;
+        count = _bufferView.Length - unfinishedRecordLen;
+        if (unfinishedRecordLen > 0)
         {
-          if (recordsBuffer.Records.Count == 0)
-            throw new InvalidOperationException("Buffer is too small. Can't add even one record.");
-
-          yield return recordsBuffer;
-          recordsBuffer = new RecordsBuffer(_bufferSizeInBytes);
-          recordsBuffer.AddRecord(record);
+          Buffer.BlockCopy(_bufferView.Array, unfinishedRecordStart, _bufferView.Array, _bufferView.Start, unfinishedRecordLen);
         }
       }
-
-      if (recordsBuffer.Records.Count > 0)
-      {
-        IsLastBlock = true;
-        yield return recordsBuffer;
-      }
+      IsLastBlock = true;
     }
 
-    public IEnumerable<object[]> ReadRecords()
+    private List<RecordInfo> GetRecordsInfo(int bytesCount, out int unfinishedRecordStart)
     {
-      IEnumerable<RecordsBuffer> blocks = ReadBlocks();
-      foreach (RecordsBuffer block in blocks)
+      unfinishedRecordStart = -1;
+
+      int recLen = 0;
+      int recStart = _bufferView.Start;
+      byte[] buffer = _bufferView.Array;
+      List<RecordInfo> records = new List<RecordInfo>();
+      int end = _bufferView.Start + bytesCount;
+      for (int i = _bufferView.Start; i < end; i++)
       {
-        for (int i = 0; i < block.Records.Count; i++)
+        recLen++;
+        if (buffer[i] == 0x0D && (i+1 < buffer.Length) && buffer[i+1] == 0x0A)
         {
-          yield return block.Records[i];
+          i++;
+          recLen++;
+          records.Add(new RecordInfo(recStart, recLen));
+          recStart += recLen;
+          recLen = 0;
         }
       }
+
+      if (recStart < end)
+        unfinishedRecordStart = recStart;
+
+      return records;
+    }
+
+    public IEnumerable<RecordInfo> ReadRecords()
+    {
+      foreach (RecordsBuffer block in ReadBlocks())
+        foreach (RecordInfo ri in block.RecordsInfo)
+          yield return ri;
     }
   }
 }

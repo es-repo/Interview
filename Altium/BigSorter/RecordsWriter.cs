@@ -1,26 +1,22 @@
-using System.Collections.Generic;
 using System.IO;
 
 namespace Altium.BigSorter
 {
   public class RecordsWriter
   {
-    private readonly IRecordParser _recordParser;
-    private readonly TextWriter _textWriter;
+    private readonly Stream _stream;
 
-    public RecordsWriter(IRecordParser recordParser, TextWriter textWriter)
+    public RecordsWriter(Stream stream)
     {
-      _recordParser = recordParser;
-      _textWriter = textWriter;
+      _stream = stream;
     }
 
-    public void WriteRecords(RecordsBuffer buffer)
+    public void Write(RecordsBuffer recordsBuffer)
     {
-      for (int i = 0; i < buffer.Records.Count; i++)
+      for (int i = 0; i < recordsBuffer.RecordsInfo.Count; i++)
       {
-        object[] values = buffer.Records[i];
-        string recordString = _recordParser.ToString(values);
-        _textWriter.WriteLine(recordString);
+        RecordInfo ri = recordsBuffer.RecordsInfo[i];
+        _stream.Write(recordsBuffer.BufferView.Array, ri.Position, ri.Length);
       }
     }
   }

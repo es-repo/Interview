@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -7,13 +8,13 @@ namespace Altium.BigSorter
 {
   public class BigTableSorter
   {
-    private readonly IRecordParser _recordParser;
-    private readonly long _bufferSizeInBytes;    
+    private readonly byte[] _buffer;
+    private readonly CreateRecordComparer _createRecordComparer;
 
-    public BigTableSorter(long bufferSizeInBytes, IRecordParser recordParser)
+    public BigTableSorter(byte[] buffer, CreateRecordComparer createRecordComparer)
     {
-      _bufferSizeInBytes = bufferSizeInBytes;
-      _recordParser = recordParser;
+      _buffer = buffer;
+      _createRecordComparer = createRecordComparer;
     }
 
     public void Sort(Stream input, int field, Stream output, ITempStreams tempStreams)
@@ -23,49 +24,62 @@ namespace Altium.BigSorter
 
     public void Sort(Stream input, int[] fields, Stream output, ITempStreams tempStreams)
     {
-      int prevField = -1;
-      Stream originalOutput = output;
-      int tempOutputFirst = fields.Length % 2;
-      Stream tempOutput = fields.Length > 1 ? tempStreams.CreateTempOutputStream() : null;
+      //int prevField = -1;
+      //Stream originalOutput = output;
+      //int tempOutputFirst = fields.Length % 2;
+      //Stream tempOutput = fields.Length > 1 ? tempStreams.CreateTempOutputStream() : null;
+
+      ArrayView<byte> bufferView = new ArrayView<byte>(_buffer, 0);
 
       try
       {
         for (int i = 0; i < fields.Length; i++)
         {
-          output = (i % 2) == tempOutputFirst ? tempOutput : originalOutput;
-          input.Position = 0;
-          output.Position = 0;
-          StreamReader sr = new StreamReader(input);
-          StreamWriter sw = new StreamWriter(output);
-          RecordsReader recordsReader = new RecordsReader(_bufferSizeInBytes, _recordParser, sr, prevField);
-          while (!recordsReader.IsEnd)
-          {
-            Sort(recordsReader, fields[i], sw, tempStreams);
-          }
-          sw.Flush();
-          prevField = fields[i];
-          input = output;
+          //  output = (i % 2) == tempOutputFirst ? tempOutput : originalOutput;
+          //input.Position = 0;
+          //output.Position = 0;
+          //StreamReader sr = new StreamReader(input);
+          //StreamWriter sw = new StreamWriter(output);
+          RecordsReader recordsReader = new RecordsReader(bufferView, input, _createRecordComparer /*prevField*/ );
+          // while (!recordsReader.IsEnd)
+          // {
+          Sort(recordsReader, fields[i], output, tempStreams);
+          // }
+          output.Flush();
+          //prevField = fields[i];
+          //input = output;
         }
       }
       finally
       {
-        if (tempOutput != null)
-          tempOutput.Dispose();
+        //if (tempOutput != null)
+        //  tempOutput.Dispose();
       }
     }
 
-    private void Sort(RecordsReader recordsReader, int field, StreamWriter output, ITempStreams tempStreams)
+    private void Sort(RecordsReader recordsReader, int field, Stream output, ITempStreams tempStreams)
     {
       RecordsBuffer firstBlock;
+
+      Stopwatch swSort = new Stopwatch();
+      swSort.Start();
       int blockCount = SortBlocks(recordsReader, field, tempStreams, out firstBlock);
+      swSort.Stop();
+      Console.WriteLine($"Sorted {blockCount} bloks in {swSort.Elapsed}");
+
       if (blockCount == 1)
       {
-        RecordsWriter recordsWriter = new RecordsWriter(_recordParser, output);
-        recordsWriter.WriteRecords(firstBlock);
+        RecordsWriter recordsWriter = new RecordsWriter(output);
+        recordsWriter.Write(firstBlock);
       }
       else
       {
+        Stopwatch swMerge = new Stopwatch();
+        swMerge.Start();
         MergeBlocks(tempStreams, blockCount, field, output);
+        swMerge.Stop();
+        Console.WriteLine($"Merged {blockCount} bloks in {swMerge.Elapsed}");
+
         tempStreams.ClearBlocks();
       }
     }
@@ -88,36 +102,38 @@ namespace Altium.BigSorter
         }
 
         using(Stream blockStream = tempStreams.CreateBlockStream(blockIndex))
-        using(StreamWriter sw = new StreamWriter(blockStream)){
-          RecordsWriter recordsWriter = new RecordsWriter(_recordParser, sw);
-          recordsWriter.WriteRecords(block);
+        {
+          RecordsWriter recordsWriter = new RecordsWriter(blockStream);
+          recordsWriter.Write(block);
         }
         blockIndex++;
       }
       return blockIndex;
     }
 
-    private void MergeBlocks(ITempStreams tempStreams, int blockCount, int field, StreamWriter output)
+    private void MergeBlocks(ITempStreams tempStreams, int blockCount, int field, Stream output)
     {
-      long blockLen = _bufferSizeInBytes / ((long) blockCount + 1);
+      int blockLen = _buffer.Length / (blockCount + 1);
 
       List<Stream> blockStreams = new List<Stream>();
       try
       {
-        List<IEnumerator<object[]> > blockRecordsEnumerators = new List<IEnumerator<object[]> > ();
+        List<IEnumerator<RecordInfo>> blockRecordsEnumerators = new List<IEnumerator<RecordInfo>>();
         for (int i = 0; i < blockCount; i++)
         {
           Stream blockStream = tempStreams.CreateBlockStream(i);
-          StreamReader sr = new StreamReader(blockStream);
           blockStreams.Add(blockStream);
-          RecordsReader blockReader = new RecordsReader(blockLen, _recordParser, sr);
+          ArrayView<byte> blockBuffer = new ArrayView<byte>(_buffer, i * blockLen, blockLen);
+          RecordsReader blockReader = new RecordsReader(blockBuffer, blockStream, null);
           blockRecordsEnumerators.Add(blockReader.ReadRecords().GetEnumerator());
         }
 
-        RecordsBufferedWriter recordsWriter =
-          new RecordsBufferedWriter(_recordParser, output, _bufferSizeInBytes);
-
-        MergeBlocks(blockRecordsEnumerators, recordsWriter, field, output);
+        ArrayView<byte> outputBlockBuffer = new ArrayView<byte>(_buffer, blockCount * blockLen);
+        using(BufferedRecordsWriter recordsWriter =
+          new BufferedRecordsWriter(outputBlockBuffer, output))
+        {
+          MergeBlocks(blockRecordsEnumerators, recordsWriter, field);
+        }
       }
       finally
       {
@@ -126,43 +142,29 @@ namespace Altium.BigSorter
       }
     }
 
-    private void MergeBlocks(List<IEnumerator<object[]> > blockRecordsEnumerators,
-      RecordsBufferedWriter recordsWriter, int field, StreamWriter outputStream)
+    private void MergeBlocks(List<IEnumerator<RecordInfo>> blockRecordsEnumerators,
+      BufferedRecordsWriter recordsWriter, int field)
     {
-      var currentRecordComparer = new EnumeratorCurrentComparer<object[]>(new RecordComparer(field));
+      IRecordComparer recordComparer = _createRecordComparer(_buffer, field);
+      var currentRecordComparer = new EnumeratorCurrentComparer<RecordInfo>(recordComparer);
 
+      var heap = new MinHeap<IEnumerator<RecordInfo>>(blockRecordsEnumerators.Count, currentRecordComparer);
       foreach (var e in blockRecordsEnumerators)
       {
         e.MoveNext();
+        heap.Add(e);
       }
 
-      blockRecordsEnumerators.Sort(currentRecordComparer);
-
-      while (blockRecordsEnumerators.Count > 0)
+      while (heap.Size > 0)
       {
-        IEnumerator<object[]> min = blockRecordsEnumerators[0];
-        recordsWriter.WriteRecord(min.Current);
+        recordsWriter.WriteRecord(heap.Root.Current);
 
-        bool empty = !min.MoveNext();
+        bool empty = !heap.Root.MoveNext();
         if (empty)
-        {
-          blockRecordsEnumerators.RemoveAt(0);
-        }
-        else if (blockRecordsEnumerators.Count > 1)
-        {
-          int i = blockRecordsEnumerators.BinarySearch(1, blockRecordsEnumerators.Count - 1,
-            min, currentRecordComparer);
-
-          if ((i < 0 && ~i > 1) || (i > 1))
-          {
-            int pos = (i < 0 ? ~i : i) - 1;
-            blockRecordsEnumerators.RemoveAt(0);
-            blockRecordsEnumerators.Insert(pos, min);
-          }
-        }
+          heap.Extract();
+        else
+          heap.DownHeap();
       }
-
-      recordsWriter.Flush();
     }
   }
 }

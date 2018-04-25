@@ -1,40 +1,42 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 
 namespace Altium.BigSorter
 {
   public class RecordsBuffer
   {
-    private readonly long _maxSizeInBytes;
-    private long _size;
-    public List<object[]> Records {get; } = new List<object[]>();
+    private readonly CreateRecordComparer _createRecordComparer;
+    private int _nextRecordPosition;
 
-    public RecordsBuffer(long maxSizeInBytes)
+    public readonly ArrayView<byte> BufferView;
+    public readonly List<RecordInfo> RecordsInfo;
+
+    public RecordsBuffer(ArrayView<byte> bufferView, List<RecordInfo> recordsInfo,
+      CreateRecordComparer createRecordComparer)
     {
-      _maxSizeInBytes = maxSizeInBytes;
+      BufferView = bufferView;
+      RecordsInfo = recordsInfo;
+      _createRecordComparer = createRecordComparer;
+      _nextRecordPosition = BufferView.Start;
     }
 
-    public bool AddRecord(object[] values)
+    public bool AddRecord(RecordInfo record)
     {
-      int recordSize = RecordSizeInBytes(values);
-      if (_size + recordSize > _maxSizeInBytes)
+      if (_nextRecordPosition + record.Length > BufferView.Start + BufferView.Length)
         return false;
-      
-      _size += recordSize;
-      Records.Add(values);
+
+      byte[] buffer = BufferView.Array;
+      Buffer.BlockCopy(buffer, record.Position, buffer, _nextRecordPosition, record.Length);
+      RecordsInfo.Add(new RecordInfo(_nextRecordPosition, record.Length));
+      _nextRecordPosition += record.Length;
       return true;
     }
 
-    private int RecordSizeInBytes(object[] values)
+    public void Sort(int field)
     {
-      return sizeof(int) + ((string)values[1]).Length * sizeof(char);
-    }
-
-    public void Sort(int fieldIndex)
-    {
-      RecordComparer comparer = new RecordComparer(fieldIndex);
-      Records.Sort(comparer);
+      IRecordComparer recordComparer = _createRecordComparer(BufferView.Array, field);
+      RecordsInfo.Sort(recordComparer);
     }
   }
 }

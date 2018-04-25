@@ -46,7 +46,7 @@ namespace Altium.BigSorter
 
     private static string GetBlockFileName(int blockIndex)
     {
-      return "block_" + blockIndex;
+      return "block_" + blockIndex + ".txt";
     }
 
     public void Dispose()

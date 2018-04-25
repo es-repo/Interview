@@ -15,6 +15,6 @@ today
 good
 red
 green
-absolutely
+justify
 sky
 house
