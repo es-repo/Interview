@@ -4,7 +4,7 @@ namespace Altium.BigSorter
 {
   public class MinHeap<T>
   {
-    public T[] _array;
+    private T[] _array;
     private readonly IComparer<T> _comparer;
 
     public MinHeap(int capacity, IComparer<T> comparer)
@@ -13,7 +13,7 @@ namespace Altium.BigSorter
       _comparer = comparer;
     }
 
-    public int Size { get; set; }
+    public int Size { get; private set; }
 
     public T Root { get { return _array[1]; } }
 
