@@ -8,7 +8,7 @@ namespace Altium
 {
   public class RecordGenerator
   {
-    private static readonly string[] _words;
+    private static readonly List<string> _words;
     private readonly Random _rnd = new Random();
 
     static RecordGenerator()
@@ -17,8 +17,12 @@ namespace Altium
       using(Stream stream = assembly.GetManifestResourceStream($"{assembly.GetName().Name}.Words.txt"))
       using(StreamReader reader = new StreamReader(stream))
       {
-        string text = reader.ReadToEnd();
-        _words = text.Split('\n');
+        _words = new List<string>();
+        string s = null;
+        while((s = reader.ReadLine()) != null)
+        {
+          _words.Add(s);
+        }
       }
     }
 
@@ -29,7 +33,7 @@ namespace Altium
       string[] words = new string[wordCount];
       for (int i = 0; i < wordCount; i++)
       {
-        string w = _words[_rnd.Next(_words.Length)];
+        string w = _words[_rnd.Next(_words.Count)];
         words[i] = w;
       }
 
