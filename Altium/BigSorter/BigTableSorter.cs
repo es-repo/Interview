@@ -64,7 +64,6 @@ namespace Altium.BigSorter
       swSort.Start();
       int blockCount = SortBlocks(recordsReader, field, tempStreams, out firstBlock);
       swSort.Stop();
-      Console.WriteLine($"Sorted {blockCount} bloks in {swSort.Elapsed}");
 
       if (blockCount == 1)
       {
@@ -73,6 +72,7 @@ namespace Altium.BigSorter
       }
       else
       {
+        Console.WriteLine($"Sorted {blockCount} bloks in {swSort.Elapsed}");
         Stopwatch swMerge = new Stopwatch();
         swMerge.Start();
         MergeBlocks(tempStreams, blockCount, field, output);
@@ -144,20 +144,22 @@ namespace Altium.BigSorter
       BufferedRecordsWriter recordsWriter, int field)
     {
       IRecordComparer recordComparer = _createRecordComparer(_buffer, field);
-      var currentRecordComparer = new EnumeratorCurrentComparer<RecordInfo>(recordComparer);
+      var currentRecordComparer = new SelectComparer<int, RecordInfo>(
+        i => blockRecordsEnumerators[i].Current,
+        recordComparer);
 
-      var heap = new MinHeap<IEnumerator<RecordInfo>>(blockRecordsEnumerators.Count, currentRecordComparer);
-      foreach (var e in blockRecordsEnumerators)
+      var heap = new MinHeap<int>(blockRecordsEnumerators.Count, currentRecordComparer);
+      for (int i = 0; i < blockRecordsEnumerators.Count; i++)
       {
-        e.MoveNext();
-        heap.Add(e);
+        blockRecordsEnumerators[i].MoveNext();
+        heap.Add(i);
       }
 
       while (heap.Size > 0)
       {
-        recordsWriter.WriteRecord(heap.Root.Current);
+        recordsWriter.WriteRecord(blockRecordsEnumerators[heap.Root].Current);
 
-        bool empty = !heap.Root.MoveNext();
+        bool empty = !blockRecordsEnumerators[heap.Root].MoveNext();
         if (empty)
           heap.Extract();
         else
