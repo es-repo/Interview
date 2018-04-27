@@ -7,17 +7,17 @@ namespace Altium.BigSorter
   public class RecordsReader
   {
     private readonly ArrayView<byte> _bufferView;
-    private readonly CreateRecordComparer _createRecordComparer;
+    private readonly IRecordComparer _recordComparer;
     private readonly Stream _stream;
 
-    public RecordsReader(ArrayView<byte> bufferView, Stream stream, CreateRecordComparer createRecordComparer)
+    public RecordsReader(ArrayView<byte> bufferView, Stream stream, IRecordComparer recordComparer)
     {
       _bufferView = bufferView;
-      _createRecordComparer = createRecordComparer;
+      _recordComparer = recordComparer;
       _stream = stream;
     }
 
-    public bool IsLastBlock {get; private set;}
+    public bool IsLastBlock { get; private set; }
 
     public IEnumerable<RecordsBuffer> ReadBlocks()
     {
@@ -43,7 +43,7 @@ namespace Altium.BigSorter
         yield return new RecordsBuffer(
           new ArrayView<byte>(_bufferView, 0, recordsBytesCount),
           records,
-          _createRecordComparer);
+          _recordComparer);
 
         offset = _bufferView.Start + unfinishedRecordLen;
         count = _bufferView.Length - unfinishedRecordLen;
@@ -61,18 +61,29 @@ namespace Altium.BigSorter
 
       int recLen = 0;
       int recStart = _bufferView.Start;
+      int stringStart = 0;
       byte[] buffer = _bufferView.Array;
       List<RecordInfo> records = new List<RecordInfo>();
       int end = _bufferView.Start + bytesCount;
+      int number = 0;
+      bool isNumberParsed = false;
       for (int i = _bufferView.Start; i < end; i++)
       {
         recLen++;
-        if (buffer[i] == 0x0D && (i+1 < buffer.Length) && buffer[i+1] == 0x0A)
+
+        if (buffer[i] == (byte)'.' && !isNumberParsed)
+        {
+          number = ParseNumber(buffer, recStart, i - 1);
+          isNumberParsed = true;
+          stringStart = i + 2;
+        }
+        if (buffer[i] == 0x0D && (i + 1 < buffer.Length) && buffer[i + 1] == 0x0A)
         {
           i++;
           recLen++;
-          records.Add(new RecordInfo(recStart, recLen));
-          recStart += recLen;
+          records.Add(new RecordInfo(recStart, recLen, number, stringStart));
+          isNumberParsed = false;
+          recStart = i + 1;
           recLen = 0;
         }
       }
@@ -81,6 +92,19 @@ namespace Altium.BigSorter
         unfinishedRecordStart = recStart;
 
       return records;
+    }
+
+    private int ParseNumber(byte[] buffer, int start, int end)
+    {
+      int n = 0;
+      int i = start;
+      while (i <= end)
+      {
+        n *= 10;
+        n += buffer[i];
+        i++;
+      }
+      return n;
     }
 
     public IEnumerable<RecordInfo> ReadRecords()

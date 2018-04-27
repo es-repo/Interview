@@ -16,7 +16,7 @@ namespace Altium.BigSorter
       for (int i = 0; i < recordsBuffer.RecordsInfo.Count; i++)
       {
         RecordInfo ri = recordsBuffer.RecordsInfo[i];
-        _stream.Write(recordsBuffer.BufferView.Array, ri.Position, ri.Length);
+        _stream.Write(recordsBuffer.BufferView.Array, ri.Start, ri.Length);
       }
     }
   }

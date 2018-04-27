@@ -2,7 +2,12 @@ using System.Collections.Generic;
 
 namespace Altium.BigSorter
 {
-  public interface IRecordComparer : IComparer<RecordInfo> { }
+  public interface IRecordComparer
+  {
+    IRecordFieldComparer CreateRecordFieldComparer(int field);
+  }
 
-  public delegate IRecordComparer CreateRecordComparer(byte[] _buffer, int field);
+  public interface IRecordFieldComparer : IComparer<RecordInfo>
+  {
+  }
 }

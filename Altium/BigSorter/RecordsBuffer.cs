@@ -6,18 +6,18 @@ namespace Altium.BigSorter
 {
   public class RecordsBuffer
   {
-    private readonly CreateRecordComparer _createRecordComparer;
+    private readonly IRecordComparer _recordComparer;
     private int _nextRecordPosition;
 
     public readonly ArrayView<byte> BufferView;
     public readonly List<RecordInfo> RecordsInfo;
 
     public RecordsBuffer(ArrayView<byte> bufferView, List<RecordInfo> recordsInfo,
-      CreateRecordComparer createRecordComparer)
+      IRecordComparer recordComparer)
     {
       BufferView = bufferView;
       RecordsInfo = recordsInfo;
-      _createRecordComparer = createRecordComparer;
+      _recordComparer = recordComparer;
       _nextRecordPosition = BufferView.Start;
     }
 
@@ -27,16 +27,16 @@ namespace Altium.BigSorter
         return false;
 
       byte[] buffer = BufferView.Array;
-      Buffer.BlockCopy(buffer, record.Position, buffer, _nextRecordPosition, record.Length);
-      RecordsInfo.Add(new RecordInfo(_nextRecordPosition, record.Length));
+      Buffer.BlockCopy(buffer, record.Start, buffer, _nextRecordPosition, record.Length);
+      RecordsInfo.Add(new RecordInfo(_nextRecordPosition, record.Length, record.Number, record.StringStart));
       _nextRecordPosition += record.Length;
       return true;
     }
 
     public void Sort(int field)
     {
-      IRecordComparer recordComparer = _createRecordComparer(BufferView.Array, field);
-      RecordsInfo.Sort(recordComparer);
+      IRecordFieldComparer comparer = _recordComparer.CreateRecordFieldComparer(field);
+      RecordsInfo.Sort(comparer);
     }
   }
 }

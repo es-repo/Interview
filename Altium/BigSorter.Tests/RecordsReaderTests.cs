@@ -193,7 +193,7 @@ namespace Altium.BigSorter.Tests
       byte[] recordABytes = LineToBytes(recordA);
       RecordInfo recordB = recordBBuffer.RecordsInfo[recordBIndex];
       byte[] recordBBytes = new byte[recordB.Length + 1];
-      Buffer.BlockCopy(recordBBuffer.BufferView.Array, recordB.Position, recordBBytes, 0, recordB.Length + 1);
+      Buffer.BlockCopy(recordBBuffer.BufferView.Array, recordB.Start, recordBBytes, 0, recordB.Length + 1);
       if (recordABytes.Length != recordABytes.Length)
         return false;
 

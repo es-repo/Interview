@@ -8,12 +8,12 @@ namespace Altium.BigSorter
   public class BigTableSorter
   {
     private readonly byte[] _buffer;
-    private readonly CreateRecordComparer _createRecordComparer;
+    private readonly IRecordComparer _recordComparer;
 
-    public BigTableSorter(byte[] buffer, CreateRecordComparer createRecordComparer)
+    public BigTableSorter(byte[] buffer, IRecordComparer recordComparer)
     {
       _buffer = buffer;
-      _createRecordComparer = createRecordComparer;
+      _recordComparer = recordComparer;
     }
 
     public void Sort(Stream input, int field, Stream output, ITempStreams tempStreams)
@@ -39,7 +39,7 @@ namespace Altium.BigSorter
           //output.Position = 0;
           //StreamReader sr = new StreamReader(input);
           //StreamWriter sw = new StreamWriter(output);
-          RecordsReader recordsReader = new RecordsReader(bufferView, input, _createRecordComparer /*prevField*/ );
+          RecordsReader recordsReader = new RecordsReader(bufferView, input, _recordComparer /*prevField*/ );
           // while (!recordsReader.IsEnd)
           // {
           Sort(recordsReader, fields[i], output, tempStreams);
@@ -143,10 +143,10 @@ namespace Altium.BigSorter
     private void MergeBlocks(List<IEnumerator<RecordInfo>> blockRecordsEnumerators,
       BufferedRecordsWriter recordsWriter, int field)
     {
-      IRecordComparer recordComparer = _createRecordComparer(_buffer, field);
+      IRecordFieldComparer comparer = _recordComparer.CreateRecordFieldComparer(field);
       var currentRecordComparer = new SelectComparer<int, RecordInfo>(
         i => blockRecordsEnumerators[i].Current,
-        recordComparer);
+        comparer);
 
       var heap = new MinHeap<int>(blockRecordsEnumerators.Count, currentRecordComparer);
       for (int i = 0; i < blockRecordsEnumerators.Count; i++)
