@@ -7,7 +7,7 @@ namespace Altium.BigSorter
     IRecordFieldComparer CreateRecordFieldComparer(int field);
   }
 
-  public interface IRecordFieldComparer : IComparer<RecordInfo>
+  public interface IRecordFieldComparer : IComparer<Record>
   {
   }
 }

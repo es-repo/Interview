@@ -116,7 +116,7 @@ namespace Altium.BigSorter
       List<Stream> blockStreams = new List<Stream>();
       try
       {
-        List<IEnumerator<RecordInfo>> blockRecordsEnumerators = new List<IEnumerator<RecordInfo>>();
+        List<IEnumerator<Record>> blockRecordsEnumerators = new List<IEnumerator<Record>>();
         for (int i = 0; i < blockCount; i++)
         {
           Stream blockStream = tempStreams.CreateBlockStream(i);
@@ -140,11 +140,11 @@ namespace Altium.BigSorter
       }
     }
 
-    private void MergeBlocks(List<IEnumerator<RecordInfo>> blockRecordsEnumerators,
+    private void MergeBlocks(List<IEnumerator<Record>> blockRecordsEnumerators,
       BufferedRecordsWriter recordsWriter, int field)
     {
       IRecordFieldComparer comparer = _recordComparer.CreateRecordFieldComparer(field);
-      var currentRecordComparer = new SelectComparer<int, RecordInfo>(
+      var currentRecordComparer = new SelectComparer<int, Record>(
         i => blockRecordsEnumerators[i].Current,
         comparer);
 

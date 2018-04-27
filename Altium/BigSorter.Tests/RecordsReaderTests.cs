@@ -191,7 +191,7 @@ namespace Altium.BigSorter.Tests
     private static bool RecordsEqual(string recordA, RecordsBuffer2 recordBBuffer, int recordBIndex)
     {
       byte[] recordABytes = LineToBytes(recordA);
-      RecordInfo recordB = recordBBuffer.RecordsInfo[recordBIndex];
+      Record recordB = recordBBuffer.RecordsInfo[recordBIndex];
       byte[] recordBBytes = new byte[recordB.Length + 1];
       Buffer.BlockCopy(recordBBuffer.BufferView.Array, recordB.Start, recordBBytes, 0, recordB.Length + 1);
       if (recordABytes.Length != recordABytes.Length)

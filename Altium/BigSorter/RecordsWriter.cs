@@ -13,9 +13,9 @@ namespace Altium.BigSorter
 
     public void Write(RecordsBuffer recordsBuffer)
     {
-      for (int i = 0; i < recordsBuffer.RecordsInfo.Count; i++)
+      for (int i = 0; i < recordsBuffer.Records.Count; i++)
       {
-        RecordInfo ri = recordsBuffer.RecordsInfo[i];
+        Record ri = recordsBuffer.Records[i];
         _stream.Write(recordsBuffer.BufferView.Array, ri.Start, ri.Length);
       }
     }

@@ -17,17 +17,17 @@ namespace Altium.BigSorter
       _bufferView = bufferView;
       _stream = stream;
       _recordsWriter = new RecordsWriter(stream);
-      _recordsBuffer = new RecordsBuffer(_bufferView, new List<RecordInfo>(), null);
+      _recordsBuffer = new RecordsBuffer(_bufferView, new List<Record>(), null);
     }
 
-    public void WriteRecord(RecordInfo recordInfo)
+    public void WriteRecord(Record recordInfo)
     {
       bool added = _recordsBuffer.AddRecord(recordInfo);
       if (added)
         return;
 
       Flush();
-      _recordsBuffer = new RecordsBuffer(_bufferView, new List<RecordInfo>(), null);
+      _recordsBuffer = new RecordsBuffer(_bufferView, new List<Record>(), null);
       _recordsBuffer.AddRecord(recordInfo);
     }
 
