@@ -7,13 +7,13 @@ namespace Altium.BigSorter
 {
   public class BigTableSorter
   {
-    private readonly byte[] _buffer;
-    private readonly IRecordComparer _recordComparer;
+    private readonly RecordComparer _recordComparer;
+    private readonly long _bufferSizeInBytes;    
 
-    public BigTableSorter(byte[] buffer, IRecordComparer recordComparer)
+    public BigTableSorter(long bufferSizeInBytes)
     {
-      _buffer = buffer;
-      _recordComparer = recordComparer;
+      _recordComparer = new RecordComparer();
+      _bufferSizeInBytes = bufferSizeInBytes;
     }
 
     public void Sort(Stream input, int field, Stream output, ITempStreams tempStreams)
@@ -28,8 +28,6 @@ namespace Altium.BigSorter
       int tempOutputFirst = fields.Length % 2;
       Stream tempOutput = fields.Length > 1 ? tempStreams.CreateTempOutputStream() : null;
 
-      ArrayView<byte> bufferView = new ArrayView<byte>(_buffer, 0);
-
       try
       {
         for (int i = 0; i < fields.Length; i++)
@@ -37,46 +35,37 @@ namespace Altium.BigSorter
           output = (i % 2) == tempOutputFirst ? tempOutput : originalOutput;
           input.Position = 0;
           output.Position = 0;
-          RecordsReader recordsReader = new RecordsReader(_recordComparer, bufferView, input/*, prevField*/);
-          // while (!recordsReader.IsEnd)
-          // {
-          Sort(recordsReader, fields[i], output, tempStreams);
-          // }
-          output.Flush();
+          StreamReader sr = new StreamReader(input);
+          StreamWriter sw = new StreamWriter(output);
+          RecordsReader recordsReader = new RecordsReader(sr, _bufferSizeInBytes, prevField);
+          while (!recordsReader.IsEnd)
+          {
+            Sort(recordsReader, fields[i], sw, tempStreams);
+          }
+          sw.Flush();
           prevField = fields[i];
           input = output;
         }
       }
       finally
       {
-        //if (tempOutput != null)
-        //  tempOutput.Dispose();
+        if (tempOutput != null)
+          tempOutput.Dispose();
       }
     }
 
-    private void Sort(RecordsReader recordsReader, int field, Stream output, ITempStreams tempStreams)
+    private void Sort(RecordsReader recordsReader, int field, StreamWriter output, ITempStreams tempStreams)
     {
       RecordsBuffer firstBlock;
-
-      Stopwatch swSort = new Stopwatch();
-      swSort.Start();
       int blockCount = SortBlocks(recordsReader, field, tempStreams, out firstBlock);
-      swSort.Stop();
-
       if (blockCount == 1)
       {
         RecordsWriter recordsWriter = new RecordsWriter(output);
-        recordsWriter.Write(firstBlock);
+        recordsWriter.WriteRecords(firstBlock);
       }
       else
       {
-        Console.WriteLine($"Sorted {blockCount} bloks in {swSort.Elapsed}");
-        Stopwatch swMerge = new Stopwatch();
-        swMerge.Start();
         MergeBlocks(tempStreams, blockCount, field, output);
-        swMerge.Stop();
-        Console.WriteLine($"Merged {blockCount} bloks in {swMerge.Elapsed}");
-
         tempStreams.ClearBlocks();
       }
     }
@@ -98,18 +87,18 @@ namespace Altium.BigSorter
         }
 
         using(Stream blockStream = tempStreams.CreateBlockStream(blockIndex))
-        {
-          RecordsWriter recordsWriter = new RecordsWriter(blockStream);
-          recordsWriter.Write(block);
+        using(StreamWriter sw = new StreamWriter(blockStream)){
+          RecordsWriter recordsWriter = new RecordsWriter(sw);
+          recordsWriter.WriteRecords(block);
         }
         blockIndex++;
       }
       return blockIndex;
     }
 
-    private void MergeBlocks(ITempStreams tempStreams, int blockCount, int field, Stream output)
+    private void MergeBlocks(ITempStreams tempStreams, int blockCount, int field, StreamWriter output)
     {
-      int blockLen = _buffer.Length / (blockCount + 1);
+      long blockSize = _bufferSizeInBytes / (blockCount + 1);
 
       List<Stream> blockStreams = new List<Stream>();
       try
@@ -119,14 +108,12 @@ namespace Altium.BigSorter
         {
           Stream blockStream = tempStreams.CreateBlockStream(i);
           blockStreams.Add(blockStream);
-          ArrayView<byte> blockBuffer = new ArrayView<byte>(_buffer, i * blockLen, blockLen);
-          RecordsReader blockReader = new RecordsReader(null, blockBuffer, blockStream);
+          StreamReader blockStreamReader = new StreamReader(blockStream);
+          RecordsReader blockReader = new RecordsReader(blockStreamReader, blockSize);
           blockRecordsEnumerators.Add(blockReader.ReadRecords().GetEnumerator());
         }
 
-        ArrayView<byte> outputBlockBuffer = new ArrayView<byte>(_buffer, blockCount * blockLen);
-        using(BufferedRecordsWriter recordsWriter =
-          new BufferedRecordsWriter(outputBlockBuffer, output))
+        using(BufferedRecordsWriter recordsWriter = new BufferedRecordsWriter(output, blockSize))
         {
           MergeBlocks(blockRecordsEnumerators, recordsWriter, field);
         }

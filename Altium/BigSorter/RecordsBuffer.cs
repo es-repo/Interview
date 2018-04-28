@@ -6,32 +6,27 @@ namespace Altium.BigSorter
 {
   public class RecordsBuffer
   {
-    private readonly IRecordComparer _recordComparer;
-    private int _nextRecordPosition;
+    private readonly RecordComparer _recordComparer;
+    private readonly long _maxSizeInBytes;
+    private long _size;
+    public List<Record> Records {get; } = new List<Record>();
 
-    public readonly ArrayView<byte> BufferView;
-    public readonly List<Record> Records;
-
-    public RecordsBuffer(ArrayView<byte> bufferView, List<Record> records,
-      IRecordComparer recordComparer)
+    public RecordsBuffer(long maxSizeInBytes)
     {
-      BufferView = bufferView;
-      Records = records;
-      _recordComparer = recordComparer;
-      _nextRecordPosition = BufferView.Start;
+      _recordComparer = new RecordComparer();
+      _maxSizeInBytes = maxSizeInBytes;
     }
 
     public bool AddRecord(Record record)
     {
-      if (_nextRecordPosition + record.Length > BufferView.Start + BufferView.Length)
+      if (_size + record.SizeInBytes > _maxSizeInBytes)
         return false;
-
-      byte[] buffer = BufferView.Array;
-      Buffer.BlockCopy(buffer, record.Start, buffer, _nextRecordPosition, record.Length);
-      Records.Add(new Record(_nextRecordPosition, record.Length, record.Number, record.StringStart));
-      _nextRecordPosition += record.Length;
+      
+      _size += record.SizeInBytes;
+      Records.Add(record);
       return true;
     }
+
 
     public void Sort(int field)
     {

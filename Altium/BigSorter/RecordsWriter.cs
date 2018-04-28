@@ -4,19 +4,22 @@ namespace Altium.BigSorter
 {
   public class RecordsWriter
   {
-    private readonly Stream _stream;
+    private readonly RecordParser _recordParser;
+    private readonly TextWriter _textWriter;
 
-    public RecordsWriter(Stream stream)
+    public RecordsWriter(TextWriter textWriter)
     {
-      _stream = stream;
+      _recordParser = new RecordParser();
+      _textWriter = textWriter;
     }
 
-    public void Write(RecordsBuffer recordsBuffer)
+    public void WriteRecords(RecordsBuffer buffer)
     {
-      for (int i = 0; i < recordsBuffer.Records.Count; i++)
+      for (int i = 0; i < buffer.Records.Count; i++)
       {
-        Record ri = recordsBuffer.Records[i];
-        _stream.Write(recordsBuffer.BufferView.Array, ri.Start, ri.Length);
+        Record record = buffer.Records[i];
+        string recordString = _recordParser.ToString(record);
+        _textWriter.Write(recordString + "\r\n");
       }
     }
   }
