@@ -12,11 +12,11 @@ namespace Altium.BigSorter
     public readonly ArrayView<byte> BufferView;
     public readonly List<Record> Records;
 
-    public RecordsBuffer(ArrayView<byte> bufferView, List<Record> recordsInfo,
+    public RecordsBuffer(ArrayView<byte> bufferView, List<Record> records,
       IRecordComparer recordComparer)
     {
       BufferView = bufferView;
-      Records = recordsInfo;
+      Records = records;
       _recordComparer = recordComparer;
       _nextRecordPosition = BufferView.Start;
     }

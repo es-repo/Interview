@@ -23,10 +23,10 @@ namespace Altium.BigSorter
 
     public void Sort(Stream input, int[] fields, Stream output, ITempStreams tempStreams)
     {
-      //int prevField = -1;
-      //Stream originalOutput = output;
-      //int tempOutputFirst = fields.Length % 2;
-      //Stream tempOutput = fields.Length > 1 ? tempStreams.CreateTempOutputStream() : null;
+      int prevField = -1;
+      Stream originalOutput = output;
+      int tempOutputFirst = fields.Length % 2;
+      Stream tempOutput = fields.Length > 1 ? tempStreams.CreateTempOutputStream() : null;
 
       ArrayView<byte> bufferView = new ArrayView<byte>(_buffer, 0);
 
@@ -34,19 +34,17 @@ namespace Altium.BigSorter
       {
         for (int i = 0; i < fields.Length; i++)
         {
-          //  output = (i % 2) == tempOutputFirst ? tempOutput : originalOutput;
-          //input.Position = 0;
-          //output.Position = 0;
-          //StreamReader sr = new StreamReader(input);
-          //StreamWriter sw = new StreamWriter(output);
-          RecordsReader recordsReader = new RecordsReader(bufferView, input, _recordComparer /*prevField*/ );
+          output = (i % 2) == tempOutputFirst ? tempOutput : originalOutput;
+          input.Position = 0;
+          output.Position = 0;
+          RecordsReader recordsReader = new RecordsReader(_recordComparer, bufferView, input/*, prevField*/);
           // while (!recordsReader.IsEnd)
           // {
           Sort(recordsReader, fields[i], output, tempStreams);
           // }
           output.Flush();
-          //prevField = fields[i];
-          //input = output;
+          prevField = fields[i];
+          input = output;
         }
       }
       finally
@@ -122,7 +120,7 @@ namespace Altium.BigSorter
           Stream blockStream = tempStreams.CreateBlockStream(i);
           blockStreams.Add(blockStream);
           ArrayView<byte> blockBuffer = new ArrayView<byte>(_buffer, i * blockLen, blockLen);
-          RecordsReader blockReader = new RecordsReader(blockBuffer, blockStream, null);
+          RecordsReader blockReader = new RecordsReader(null, blockBuffer, blockStream);
           blockRecordsEnumerators.Add(blockReader.ReadRecords().GetEnumerator());
         }
 

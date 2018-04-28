@@ -16,7 +16,7 @@ namespace Altium.BigSorter
     {
       _tempDir =  tempDir;
       _blocksDir = Path.Combine(tempDir, "blocks");
-      _tempOutputFileName = Path.Combine(tempDir, "output");
+      _tempOutputFileName = Path.Combine(tempDir, "output.txt");
       _blockFiles = new List<string>();
     }
 

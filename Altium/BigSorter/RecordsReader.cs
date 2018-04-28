@@ -12,11 +12,11 @@ namespace Altium.BigSorter
     private readonly ArrayView<byte> _bufferView;
     private readonly Stream _stream;
 
-    public RecordsReader(ArrayView<byte> bufferView, Stream stream, IRecordComparer recordComparer)
+    public RecordsReader(IRecordComparer recordComparer, ArrayView<byte> bufferView, Stream stream)
     {
+      _recordComparer = recordComparer;
       _recordParser = new RecordParser();
       _bufferView = bufferView;
-      _recordComparer = recordComparer;
       _stream = stream;
     }
 
