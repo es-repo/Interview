@@ -9,10 +9,10 @@ namespace Altium.BigSorter
   {
     static void Main(string[] args)
     {
-      string inputPath = args.Length > 0 ? args[0] : "1mb.txt";
+      string inputPath = args.Length > 0 ? args[0] : @"05mb.txt";
       string outputPath = Path.GetFileNameWithoutExtension(inputPath) + "-sorted" + 
         Path.GetExtension(inputPath);
-      long bufferSize = args.Length > 1 ? long.Parse(args[1]) : 100000;
+      long bufferSize = args.Length > 1 ? long.Parse(args[1]) : 100000000;
 
       Stopwatch sw = new Stopwatch();
       Console.WriteLine($"Sorting file: {inputPath} ...");

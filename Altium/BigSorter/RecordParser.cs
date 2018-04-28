@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Altium.BigSorter
 {
   public class RecordParser

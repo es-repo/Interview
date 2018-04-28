@@ -32,6 +32,10 @@ namespace Altium.BigSorter
       {
         for (int i = 0; i < fields.Length; i++)
         {
+          Console.WriteLine($"Sorting by field {fields[i]}...");
+          Stopwatch stopwatch = new Stopwatch();
+          stopwatch.Start();
+          
           output = (i % 2) == tempOutputFirst ? tempOutput : originalOutput;
           input.Position = 0;
           output.Position = 0;
@@ -45,6 +49,9 @@ namespace Altium.BigSorter
           sw.Flush();
           prevField = fields[i];
           input = output;
+
+          stopwatch.Stop();
+          Console.WriteLine($"Sorting by field {fields[i]} done in {stopwatch.Elapsed}");
         }
       }
       finally
@@ -57,7 +64,10 @@ namespace Altium.BigSorter
     private void Sort(RecordsReader recordsReader, int field, StreamWriter output, ITempStreams tempStreams)
     {
       RecordsBuffer firstBlock;
+      Stopwatch sortSw = new Stopwatch();
+      sortSw.Start();
       int blockCount = SortBlocks(recordsReader, field, tempStreams, out firstBlock);
+      sortSw.Stop();
       if (blockCount == 1)
       {
         RecordsWriter recordsWriter = new RecordsWriter(output);
@@ -65,7 +75,14 @@ namespace Altium.BigSorter
       }
       else
       {
+        Console.WriteLine($"{blockCount} blocks sorted in {sortSw.Elapsed}");
+
+        Stopwatch mergeSw = new Stopwatch();
+        mergeSw.Start();
         MergeBlocks(tempStreams, blockCount, field, output);
+        mergeSw.Stop();
+        Console.WriteLine($"{blockCount} blocks merged in {mergeSw.Elapsed}");
+
         tempStreams.ClearBlocks();
       }
     }
@@ -92,6 +109,7 @@ namespace Altium.BigSorter
           recordsWriter.WriteRecords(block);
         }
         blockIndex++;
+        Console.WriteLine($"Block {blockIndex} sorted");
       }
       return blockIndex;
     }

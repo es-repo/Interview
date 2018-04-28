@@ -19,7 +19,8 @@ namespace Altium.BigSorter
       {
         Record record = buffer.Records[i];
         string recordString = _recordParser.ToString(record);
-        _textWriter.Write(recordString + "\r\n");
+        _textWriter.Write(recordString);
+        _textWriter.Write("\r\n");
       }
     }
   }

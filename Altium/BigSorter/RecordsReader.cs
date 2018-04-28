@@ -57,6 +57,7 @@ namespace Altium.BigSorter
           else if (comparer.Compare(record, recordToCompare.Value) != 0)
           {
             _recordAhead = record;
+            _hasRecordAhead = true;
             break;
           }
         }
