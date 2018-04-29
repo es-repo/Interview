@@ -19,7 +19,7 @@ namespace Altium.BigSorter
 
     public bool AddRecord(Record record)
     {
-      if (_size + record.SizeInBytes > _maxSizeInBytes)
+      if (_size + record.SizeInBytes > _maxSizeInBytes || Records.Count == int.MaxValue)
         return false;
 
       _size += record.SizeInBytes;
