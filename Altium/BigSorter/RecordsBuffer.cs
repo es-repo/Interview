@@ -30,10 +30,7 @@ namespace Altium.BigSorter
     public void Sort(int field)
     {
       IRecordFieldComparer comparer = _recordComparer.CreateRecordFieldComparer(field);
-      Records.ParallelMergeSort(comparer);
-      
-      //Records = ParallelSorter.Sort(Records, comparer);
-      //Records.Sort(comparer);
+      Records = Records.ParallelSort(comparer);
     }
   }
 }

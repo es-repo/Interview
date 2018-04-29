@@ -63,9 +63,9 @@ namespace Altium.BigSorter
 
     private void Sort(RecordsReader recordsReader, int field, StreamWriter output, ITempStreams tempStreams)
     {
-      RecordsBuffer firstBlock;
       Stopwatch sortSw = new Stopwatch();
       sortSw.Start();
+      RecordsBuffer firstBlock;
       int blockCount = SortBlocks(recordsReader, field, tempStreams, out firstBlock);
       sortSw.Stop();
       if (blockCount == 1)
@@ -98,9 +98,11 @@ namespace Altium.BigSorter
         block.Sort(field);
         if (blockIndex == 0)
         {
-          firstBlock = block;
           if (recordsReader.IsLastBlock)
+          {
+            firstBlock = block;
             return 1;
+          }
         }
 
         using(Stream blockStream = tempStreams.CreateBlockStream(blockIndex))
