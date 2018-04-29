@@ -9,7 +9,7 @@ namespace Altium.BigSorter
     private readonly RecordComparer _recordComparer;
     private readonly long _maxSizeInBytes;
     private long _size;
-    public List<Record> Records {get; } = new List<Record>();
+    public List<Record> Records { get; private set; } = new List<Record>();
 
     public RecordsBuffer(long maxSizeInBytes)
     {
@@ -21,17 +21,19 @@ namespace Altium.BigSorter
     {
       if (_size + record.SizeInBytes > _maxSizeInBytes)
         return false;
-      
+
       _size += record.SizeInBytes;
       Records.Add(record);
       return true;
     }
 
-
     public void Sort(int field)
     {
       IRecordFieldComparer comparer = _recordComparer.CreateRecordFieldComparer(field);
-      Records.Sort(comparer);
+      Records.ParallelMergeSort(comparer);
+      
+      //Records = ParallelSorter.Sort(Records, comparer);
+      //Records.Sort(comparer);
     }
   }
 }

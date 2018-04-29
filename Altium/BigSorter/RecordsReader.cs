@@ -30,7 +30,6 @@ namespace Altium.BigSorter
     public IEnumerable<RecordsBuffer> ReadBlocks()
     {
       IsLastBlock = false;
-      string line = null;
       RecordsBuffer recordsBuffer = new RecordsBuffer(_bufferSizeInBytes);
       Record? recordToCompare = null;
       IRecordFieldComparer comparer = _readWhileEqualField != -1
@@ -44,6 +43,7 @@ namespace Altium.BigSorter
         _hasRecordAhead = false;
       }
 
+      string line = null;
       while ((line = _streamReader.ReadLine()) != null)
       {
         Record record = _recordParser.Parse(line);
