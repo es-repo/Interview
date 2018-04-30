@@ -25,7 +25,10 @@ namespace Altium
       using(StreamWriter sw = new StreamWriter(fs))
       {
         foreach (string s in stringGenerator.Generate(maxSize))
-          sw.Write(s + "\r\n");
+        {
+          sw.Write(s);
+          sw.Write("\r\n");
+        }
       }
     }
   }

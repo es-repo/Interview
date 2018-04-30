@@ -10,14 +10,14 @@ namespace Altium.BigSorter
   public class BigTableSorter
   {
     private readonly RecordComparer _recordComparer;
-    private readonly long _bufferSizeInBytes;
-    private readonly int _workersCount;
+    private readonly long _maxBufferSizeInBytes;
+    private readonly int _maxWorkersCount;
 
-    public BigTableSorter(long bufferSizeInBytes)
+    public BigTableSorter(long maxBufferSizeInBytes)
     {
       _recordComparer = new RecordComparer();
-      _workersCount = Environment.ProcessorCount;
-      _bufferSizeInBytes = bufferSizeInBytes / _workersCount;
+      _maxBufferSizeInBytes = maxBufferSizeInBytes;
+      _maxWorkersCount = Environment.ProcessorCount;
     }
 
     public void Sort(Stream input, int field, Stream output, ITempStreams tempStreams)
@@ -45,10 +45,12 @@ namespace Altium.BigSorter
           output.Position = 0;
           StreamReader sr = new StreamReader(input);
           StreamWriter sw = new StreamWriter(output);
-          RecordsReader recordsReader = new RecordsReader(sr, _bufferSizeInBytes, prevField);
+          int workersCount = _maxWorkersCount;
+          long bufferSizeInBytesPerWorker = _maxBufferSizeInBytes / workersCount;
+          RecordsReader recordsReader = new RecordsReader(sr, bufferSizeInBytesPerWorker, prevField);
           while (!recordsReader.IsEnd)
           {
-            Sort(recordsReader, fields[i], sw, tempStreams);
+            Sort(recordsReader, fields[i], sw, tempStreams, workersCount, bufferSizeInBytesPerWorker);
           }
           sw.Flush();
           prevField = fields[i];
@@ -65,12 +67,15 @@ namespace Altium.BigSorter
       }
     }
 
-    private void Sort(RecordsReader recordsReader, int field, StreamWriter output, ITempStreams tempStreams)
+    private void Sort(RecordsReader recordsReader, int field, StreamWriter output, ITempStreams tempStreams, 
+      int workersCount, long bufferSizeInBytesPerWorker)
     {
       Stopwatch sortSw = new Stopwatch();
       sortSw.Start();
       RecordsBuffer firstBlock;
-      int blockCount = SortBlocks(recordsReader, field, tempStreams, out firstBlock);
+      int blockCount = workersCount > 1 
+        ? SortBlocksParallel(recordsReader, field, tempStreams, workersCount, out firstBlock)
+        : SortBlocksSequential(recordsReader, field, tempStreams, out firstBlock);
       sortSw.Stop();
       if (blockCount == 1)
       {
@@ -81,9 +86,10 @@ namespace Altium.BigSorter
       {
         Console.WriteLine($"{blockCount} blocks sorted in {sortSw.Elapsed}");
 
+        Console.WriteLine("Merging...");
         Stopwatch mergeSw = new Stopwatch();
         mergeSw.Start();
-        MergeBlocks(tempStreams, blockCount, field, output);
+        MergeBlocks(tempStreams, blockCount, field, output, bufferSizeInBytesPerWorker);
         mergeSw.Stop();
         Console.WriteLine($"{blockCount} blocks merged in {mergeSw.Elapsed}");
 
@@ -91,86 +97,38 @@ namespace Altium.BigSorter
       }
     }
 
-    //private int SortBlocks(RecordsReader recordsReader, int field, ITempStreams tempStreams,
-    //  out RecordsBuffer firstBlock)
-    //{
-    //  int blockIndex = 0;
-    //  firstBlock = null;
-    //  IEnumerable<RecordsBuffer> blocks = recordsReader.ReadBlocks();
-    //  foreach (RecordsBuffer block in blocks)
-    //  {
-    //    block.Sort(field);
-    //    if (blockIndex == 0)
-    //    {
-    //      if (recordsReader.IsLastBlock)
-    //      {
-    //        firstBlock = block;
-    //        return 1;
-    //      }
-    //    }
-
-    //    using (Stream blockStream = tempStreams.CreateBlockStream(blockIndex))
-    //    using (StreamWriter sw = new StreamWriter(blockStream))
-    //    {
-    //      RecordsWriter recordsWriter = new RecordsWriter(sw);
-    //      recordsWriter.WriteRecords(block);
-    //    }
-    //    blockIndex++;
-    //    Console.WriteLine($"Block {blockIndex} sorted");
-    //  }
-    //  return blockIndex;
-    //}
-
-    private int SortBlocks3(RecordsReader recordsReader, int field, ITempStreams tempStreams, out RecordsBuffer firstBlock)
+    private int SortBlocksSequential(RecordsReader recordsReader, int field, ITempStreams tempStreams,
+      out RecordsBuffer firstBlock)
     {
+      int blockIndex = 0;
       firstBlock = null;
-      IEnumerator<RecordsBuffer> blocks = recordsReader.ReadBlocks().GetEnumerator();
-      if (!blocks.MoveNext())
-        return 0;
-
-      if (recordsReader.IsLastBlock)
+      IEnumerable<RecordsBuffer> blocks = recordsReader.ReadBlocks();
+      foreach (RecordsBuffer block in blocks)
       {
-        firstBlock = blocks.Current;
-        firstBlock.ParallelSort(field);
-        return 1;
-      }
-
-      int blockCount = 0;
-      int serie = 0;
-      while(blocks.Current != null)
-      {
-        Parallel.For(0, _workersCount, (i, state) =>
+        block.Sort(field);
+        if (blockIndex == 0)
         {
-          RecordsBuffer block = null;
-          lock (blocks)
+          if (recordsReader.IsLastBlock)
           {
-            block = blocks.Current;
-            blockCount++;
-            blocks.MoveNext();
+            firstBlock = block;
+            return 1;
           }
+        }
 
-          if (block == null)
-            return;
-
-          int blockIndex = serie * _workersCount + i;
-          Console.WriteLine($"Block {blockIndex + 1} sorting started...");
-          
-          block.ParallelSort(field);
-          using (Stream blockStream = tempStreams.CreateBlockStream(blockIndex))
-          using (StreamWriter sw = new StreamWriter(blockStream))
-          {
-            RecordsWriter recordsWriter = new RecordsWriter(sw);
-            recordsWriter.WriteRecords(block);
-          }
-          Console.WriteLine($"Block {blockIndex + 1} sorted");
-        });
-        serie++;
+        using (Stream blockStream = tempStreams.CreateBlockStream(blockIndex))
+        using (StreamWriter sw = new StreamWriter(blockStream))
+        {
+          RecordsWriter recordsWriter = new RecordsWriter(sw);
+          recordsWriter.WriteRecords(block);
+        }
+        Console.WriteLine($"Block {blockIndex} sorted");
+        blockIndex++;
       }
-      return blockCount;
+      return blockIndex;
     }
 
-
-    private int SortBlocks(RecordsReader recordsReader, int field, ITempStreams tempStreams, out RecordsBuffer firstBlock)
+    private int SortBlocksParallel(RecordsReader recordsReader, int field, ITempStreams tempStreams, 
+      int workersCount, out RecordsBuffer firstBlock)
     {
       firstBlock = null;
       IEnumerator<RecordsBuffer> blocks = recordsReader.ReadBlocks().GetEnumerator();
@@ -180,13 +138,13 @@ namespace Altium.BigSorter
       if (recordsReader.IsLastBlock)
       {
         firstBlock = blocks.Current;
-        firstBlock.ParallelSort(field);
+        firstBlock.Sort(field);
         return 1;
       }
 
       int blockIndex = 0;
-      using (var blockCollection = new BlockingCollection<Tuple<RecordsBuffer, int>>(_workersCount))
-      using (var sortCompletionCollection = new BlockingCollection<bool>(_workersCount))
+      using (var blockCollection = new BlockingCollection<Tuple<RecordsBuffer, int>>(workersCount))
+      using (var sortCompletionCollection = new BlockingCollection<bool>(workersCount))
       {
         Task blocksReadingTask = Task.Factory.StartNew(() =>
         {
@@ -229,7 +187,7 @@ namespace Altium.BigSorter
     {
       return Task.Factory.StartNew(() =>
       {
-        block.ParallelSort(field);
+        block.Sort(field);
         using (Stream blockStream = tempStreams.CreateBlockStream(blockIndex))
         using (StreamWriter sw = new StreamWriter(blockStream))
         {
@@ -241,9 +199,10 @@ namespace Altium.BigSorter
       });
     }
 
-    private void MergeBlocks(ITempStreams tempStreams, int blockCount, int field, StreamWriter output)
+    private void MergeBlocks(ITempStreams tempStreams, int blockCount, int field, StreamWriter output,
+      long bufferSizeInBytes)
     {
-      long blockSize = _bufferSizeInBytes / (blockCount + 1);
+      long blockSize = bufferSizeInBytes / (blockCount + 1);
 
       List<Stream> blockStreams = new List<Stream>();
       try

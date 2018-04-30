@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace Altium.BigSorter
@@ -7,7 +6,7 @@ namespace Altium.BigSorter
   public class BufferedRecordsWriter : IDisposable
   {
     private readonly RecordsWriter _recordsWriter;
-    private readonly long _bufferSizeInBytes;    
+    private readonly long _bufferSizeInBytes;
     private RecordsBuffer _recordsBuffer;
 
     public BufferedRecordsWriter(TextWriter textWriter, long bufferSizeInBytes)
