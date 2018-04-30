@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -9,10 +8,10 @@ namespace Altium.BigSorter
   {
     static void Main(string[] args)
     {
-      string inputPath = args.Length > 0 ? args[0] : "1mb.txt";
-      string outputPath = Path.GetFileNameWithoutExtension(inputPath) + "-sorted" + 
+      string inputPath = args.Length > 0 ? args[0] : @"1gb.txt";
+      string outputPath = Path.GetFileNameWithoutExtension(inputPath) + "-sorted" +
         Path.GetExtension(inputPath);
-      long bufferSize = args.Length > 1 ? long.Parse(args[1]) : 100000;
+      long bufferSize = args.Length > 1 ? long.Parse(args[1]) : 1024L * 1024 * 1024;
 
       Stopwatch sw = new Stopwatch();
       Console.WriteLine($"Sorting file: {inputPath} ...");
@@ -29,9 +28,8 @@ namespace Altium.BigSorter
       using(FileStream output = new FileStream(outputPath, FileMode.Create))
       using(FileTempStreams tempStreams = new FileTempStreams(tempDir))
       {
-        byte[] buffer = new byte[bufferSize];
-        BigTableSorter bigTableSorter = new BigTableSorter(buffer, new RecordComparer(buffer));
-        bigTableSorter.Sort(input, new int[] { 1 }, output, tempStreams);
+        BigTableSorter bigTableSorter = new BigTableSorter(bufferSize);
+        bigTableSorter.Sort(input, new int[] { 1, 0 }, output, tempStreams);
       }
       if (Directory.Exists(tempDir))
         Directory.Delete(tempDir, true);

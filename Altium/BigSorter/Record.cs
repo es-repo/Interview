@@ -2,19 +2,20 @@ namespace Altium.BigSorter
 {
   public struct Record
   {
-    public readonly int Start;
-    public readonly int Length;
-    public readonly int StringStart;
-    public readonly int StringLength;
-    public readonly int Number;
+    private static readonly int _sizeOfRecord = System.Runtime.InteropServices.Marshal.SizeOf<Record>();
 
-    public Record(int start, int length, int number, int stringStart)
+    public readonly int Number;
+    public readonly string String;
+
+    public Record(int number, string @string)
     {
-      Start = start;
-      Length = length;
-      StringStart = stringStart;
-      StringLength = Length - (StringStart - Start);
       Number = number;
+      String = @string;
+    }
+
+    public int SizeInBytes
+    {
+      get { return _sizeOfRecord + String.Length * sizeof(char); }
     }
   }
 }

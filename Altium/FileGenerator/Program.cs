@@ -9,7 +9,7 @@ namespace Altium
     static void Main(string[] args)
     {
       string filePath = args.Length > 0 ? args[0] : "1gb.txt";
-      long maxSize = args.Length > 1 ? long.Parse(args[1]) : 1000000000;
+      long maxSize = args.Length > 1 ? long.Parse(args[1]) : 1073741824;
       Stopwatch sw = new Stopwatch();
       Console.WriteLine($"Generating file: {filePath} ...");
       sw.Start();
@@ -25,7 +25,10 @@ namespace Altium
       using(StreamWriter sw = new StreamWriter(fs))
       {
         foreach (string s in stringGenerator.Generate(maxSize))
-          sw.Write(s + "\r\n");
+        {
+          sw.Write(s);
+          sw.Write("\r\n");
+        }
       }
     }
   }

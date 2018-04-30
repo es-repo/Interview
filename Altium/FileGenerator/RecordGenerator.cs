@@ -28,7 +28,6 @@ namespace Altium
 
     public string Generate()
     {
-      StringBuilder sb = new StringBuilder();
       int wordCount = _rnd.Next(1, 4);
       string[] words = new string[wordCount];
       for (int i = 0; i < wordCount; i++)
