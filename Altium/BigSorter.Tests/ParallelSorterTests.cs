@@ -27,13 +27,13 @@ namespace Altium.BigSorter.Tests
 
     [InlineData(
       new int[] { 5, 1, 2, 9, 3, 6, 6, 1, 9, 4, 6, 6, 9, 1 },
-      4, 4,
+      4, 15,
       new [] { 1, 1, 1, 2, 3, 4, 5, 6, 6, 6, 6, 9, 9, 9 },
       new [] { 1, 1, 1, 2, 3, 4, 5, 6, 6, 6, 6, 9, 9, 9 })]
     public void Test(int[] input, int chunksCount, int threshold, int[] expectedChunksSorted, int[] expectedSorted)
     {
       List<int> list = input.ToList();
-      List<int> sortedList = ParallelSorter.Sort(list, Comparer<int>.Default, chunksCount, threshold);
+      List<int> sortedList = ParallelSorter.ParallelSort(list, Comparer<int>.Default, chunksCount, threshold);
       Assert.Equal(expectedChunksSorted, list);
       Assert.Equal(expectedSorted, sortedList);
     }
