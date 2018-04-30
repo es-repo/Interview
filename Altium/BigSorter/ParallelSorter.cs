@@ -27,7 +27,7 @@ namespace Altium.BigSorter
 
     public static List<T> ParallelSort<T>(this List<T> list, IComparer<T> comparer)
     {
-      return ParallelSort(list, comparer, Environment.ProcessorCount, 8192);
+      return ParallelSort(list, comparer, Environment.ProcessorCount, 4096);
     }
 
     private static List<T> Merge<T>(List<T> list, int chunkCount, int chunkSize, IComparer<T> comparer)

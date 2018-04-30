@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace Altium.BigSorter
 {
@@ -18,6 +16,7 @@ namespace Altium.BigSorter
       _blocksDir = Path.Combine(tempDir, "blocks");
       _tempOutputFileName = Path.Combine(tempDir, "output.txt");
       _blockFiles = new List<string>();
+      ClearBlocks();
     }
 
     public Stream CreateBlockStream(int blockIndex)

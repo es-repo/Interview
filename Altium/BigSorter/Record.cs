@@ -2,6 +2,8 @@ namespace Altium.BigSorter
 {
   public struct Record
   {
+    private static readonly int _sizeOfRecord = System.Runtime.InteropServices.Marshal.SizeOf<Record>();
+
     public readonly int Number;
     public readonly string String;
 
@@ -13,7 +15,7 @@ namespace Altium.BigSorter
 
     public int SizeInBytes
     {
-      get { return sizeof(int) + String.Length * sizeof(char); }
+      get { return _sizeOfRecord + String.Length * sizeof(char); }
     }
   }
 }

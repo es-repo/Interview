@@ -27,10 +27,16 @@ namespace Altium.BigSorter
       return true;
     }
 
-    public void Sort(int field)
+    public void ParallelSort(int field)
     {
       IRecordFieldComparer comparer = _recordComparer.CreateRecordFieldComparer(field);
       Records = Records.ParallelSort(comparer);
+    }
+
+    public void Sort(int field)
+    {
+      IRecordFieldComparer comparer = _recordComparer.CreateRecordFieldComparer(field);
+      Records.Sort(comparer);
     }
   }
 }

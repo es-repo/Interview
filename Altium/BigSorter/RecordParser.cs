@@ -14,7 +14,7 @@ namespace Altium.BigSorter
     {
       int i = 0;
       int n = 0;
-      while(s[i] != '.')
+      while (s[i] != '.')
       {
         n *= 10;
         n += s[i] - '0';
