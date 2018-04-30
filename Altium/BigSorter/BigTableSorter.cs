@@ -13,11 +13,11 @@ namespace Altium.BigSorter
     private readonly long _maxBufferSizeInBytes;
     private readonly int _maxWorkersCount;
 
-    public BigTableSorter(long maxBufferSizeInBytes)
+    public BigTableSorter(long maxBufferSizeInBytes, int maxWorkersCount = -1)
     {
       _recordComparer = new RecordComparer();
       _maxBufferSizeInBytes = maxBufferSizeInBytes;
-      _maxWorkersCount = Environment.ProcessorCount;
+      _maxWorkersCount = maxWorkersCount == -1 ? Environment.ProcessorCount : maxWorkersCount;
     }
 
     public void Sort(Stream input, int field, Stream output, ITempStreams tempStreams)
@@ -31,7 +31,8 @@ namespace Altium.BigSorter
       Stream originalOutput = output;
       int tempOutputFirst = fields.Length % 2;
       Stream tempOutput = fields.Length > 1 ? tempStreams.CreateTempOutputStream() : null;
-
+      int workersCount = _maxWorkersCount;
+      long bufferSizeInBytesPerWorker = _maxBufferSizeInBytes / workersCount;
       try
       {
         for (int i = 0; i < fields.Length; i++)
@@ -45,8 +46,6 @@ namespace Altium.BigSorter
           output.Position = 0;
           StreamReader sr = new StreamReader(input);
           StreamWriter sw = new StreamWriter(output);
-          int workersCount = _maxWorkersCount;
-          long bufferSizeInBytesPerWorker = _maxBufferSizeInBytes / workersCount;
           RecordsReader recordsReader = new RecordsReader(sr, bufferSizeInBytesPerWorker, prevField);
           while (!recordsReader.IsEnd)
           {
