@@ -100,13 +100,12 @@ namespace Altium.BigSorter.Tests
 
       int sizeOfRecord = System.Runtime.InteropServices.Marshal.SizeOf<Record>() + 2;
       int bufSize = sizeOfRecord * 5 * workersCount;
-      BigTableSorter tableSorter = new BigTableSorter(bufSize, workersCount);
+      TempStreams tempStreams = new TempStreams();
+      BigTableSorter tableSorter = new BigTableSorter(tempStreams, bufSize, workersCount);
 
       MemoryStream input = StringsToStream(records);
       MemoryStream output = new MemoryStream();
-
-      TempStreams tempStreams = new TempStreams();
-      tableSorter.Sort(input, 1, output, tempStreams);
+      tableSorter.Sort(input, 1, output);
 
       Assert.Equal(4, tempStreams.Blocks[0].Count);
 
@@ -214,13 +213,14 @@ namespace Altium.BigSorter.Tests
 
       int sizeOfRecord = System.Runtime.InteropServices.Marshal.SizeOf<Record>() + 2;
       int bufSize = sizeOfRecord * records.Length * workersCount;
-      BigTableSorter tableSorter = new BigTableSorter(bufSize, workersCount);
+      TempStreams tempStreams = new TempStreams();
+      BigTableSorter tableSorter = new BigTableSorter(tempStreams, bufSize, workersCount);
 
       MemoryStream input = StringsToStream(records);
       MemoryStream output = new MemoryStream();
 
-      TempStreams tempStreams = new TempStreams();
-      tableSorter.Sort(input, 1, output, tempStreams);
+      
+      tableSorter.Sort(input, 1, output);
 
       Assert.Empty(tempStreams.Blocks);
 
@@ -293,13 +293,12 @@ namespace Altium.BigSorter.Tests
 
       int sizeOfRecord = System.Runtime.InteropServices.Marshal.SizeOf<Record>() + 2;
       int bufSize = sizeOfRecord * 6 * workersCount;
-      BigTableSorter tableSorter = new BigTableSorter(bufSize, workersCount);
+      TempStreams tempStreams = new TempStreams();
+      BigTableSorter tableSorter = new BigTableSorter(tempStreams, bufSize, workersCount);
 
       MemoryStream input = StringsToStream(records);
       MemoryStream output = new MemoryStream();
-
-      TempStreams tempStreams = new TempStreams();
-      tableSorter.Sort(input, new int[] { 1, 0 }, output, tempStreams);
+      tableSorter.Sort(input, new int[] { 1, 0 }, output);
 
       string[] expectedRecords = new string[]
       {
