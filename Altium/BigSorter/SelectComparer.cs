@@ -3,6 +3,11 @@ using System.Collections.Generic;
 
 namespace Altium.BigSorter
 {
+  /// <summary>
+  /// A comparer to compare elements's properties.
+  /// Accepts in constructor a selector function to access element's property
+  /// and a comparer to compare values of these properties. 
+  /// </summary>
   public class SelectComparer<K, T> : IComparer<K>
   {
     private readonly Func<K, T> _select;

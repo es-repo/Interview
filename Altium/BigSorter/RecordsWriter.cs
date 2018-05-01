@@ -2,6 +2,9 @@ using System.IO;
 
 namespace Altium.BigSorter
 {
+  /// <summary>
+  /// Writs records to a stream.
+  /// </summary>
   public class RecordsWriter
   {
     private readonly RecordParser _recordParser;
@@ -13,6 +16,9 @@ namespace Altium.BigSorter
       _textWriter = textWriter;
     }
 
+    /// <summary>
+    /// Writes all records from a records buffer.
+    /// </summary>
     public void WriteRecords(RecordsBuffer buffer)
     {
       for (int i = 0; i < buffer.Records.Count; i++)

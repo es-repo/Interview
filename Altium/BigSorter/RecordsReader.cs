@@ -4,6 +4,9 @@ using System.IO;
 
 namespace Altium.BigSorter
 {
+  /// <summary>
+  /// Reads records from stream.
+  /// </summary>
   public class RecordsReader
   {
     private readonly RecordParser _recordParser;
@@ -27,6 +30,9 @@ namespace Altium.BigSorter
 
     public bool IsEnd { get { return _streamReader.EndOfStream && !_hasRecordAhead; } }
 
+    /// <summary>
+    /// Reads records by blocks of specific size returning one after another.
+    /// </summary>
     public IEnumerable<RecordsBuffer> ReadBlocks()
     {
       IsLastBlock = false;
@@ -81,6 +87,9 @@ namespace Altium.BigSorter
       }
     }
 
+    /// <summary>
+    /// Reads records by blocks of specific size and enumerate all records one after another.
+    /// </summary>
     public IEnumerable<Record> ReadRecords()
     {
       IEnumerable<RecordsBuffer> blocks = ReadBlocks();

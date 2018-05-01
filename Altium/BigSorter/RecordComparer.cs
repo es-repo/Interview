@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Altium.BigSorter
 {
+  /// <summary>
+  /// Factory for record field comparers.
+  /// </summary>
   public class RecordComparer
   {
     public IRecordFieldComparer CreateRecordFieldComparer(int field)
@@ -20,6 +23,9 @@ namespace Altium.BigSorter
   {
   }
 
+  /// <summary>
+  /// Compares records by their String property.
+  /// </summary>
   public class StringFieldComparer : IRecordFieldComparer
   {
     unsafe public int Compare(Record x, Record y)
@@ -28,6 +34,9 @@ namespace Altium.BigSorter
     }
   }
 
+  /// <summary>
+  /// Compares records by their Number property.
+  /// </summary>
   public class NumberFieldComparer : IRecordFieldComparer
   {
     unsafe public int Compare(Record x, Record y)

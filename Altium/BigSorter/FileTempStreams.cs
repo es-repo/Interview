@@ -3,6 +3,10 @@ using System.IO;
 
 namespace Altium.BigSorter
 {
+  /// <summary>
+  /// Implementation of ITempStreams interface to store temp data in file system.
+  /// (Another implementation resides in unit test project which store data in memory).
+  /// </summary>
   public class FileTempStreams : ITempStreams
   {
     private readonly string _tempDir;

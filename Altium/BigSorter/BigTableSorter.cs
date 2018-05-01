@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Altium.BigSorter
 {
+  /// <summary>
+  /// Sorts big tabled data which does not fit into RAM. 
+  /// </summary>
   public class BigTableSorter
   {
     private readonly RecordComparer _recordComparer;
@@ -22,11 +25,23 @@ namespace Altium.BigSorter
       _maxWorkersCount = maxWorkersCount == -1 ? Environment.ProcessorCount : maxWorkersCount;
     }
 
+    /// <summary>
+    /// Sorts big tabled data from stream by specified field.
+    /// </summary>
+    /// <param name="input">Source data stream.</param>
+    /// <param name="field">Field index by which sorting will happen.</param>
+    /// <param name="output">Dest data stream.</param>
     public void Sort(Stream input, int field, Stream output)
     {
       Sort(input, new int[] { field }, output);
     }
 
+    /// <summary>
+    /// Sorts big tabled data from stream by specified fields.
+    /// </summary>
+    /// <param name="input">Source data stream.</param>
+    /// <param name="field">Field indexes by which sorting will happen one after another.</param>
+    /// <param name="output">Dest data stream.</param>
     public void Sort(Stream input, int[] fields, Stream output)
     {
       int prevField = -1;
