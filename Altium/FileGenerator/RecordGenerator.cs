@@ -35,6 +35,7 @@ namespace Altium
         string w = _words[_rnd.Next(_words.Count)];
         words[i] = w;
       }
+      words[0] = Capitalize(words[0]);
 
       int number = _rnd.Next(10000);
       return number + ". " + String.Join(" ", words);
@@ -52,6 +53,11 @@ namespace Altium
 
         yield return s;
       }
+    }
+
+    private static string Capitalize(string str)
+    {
+      return char.ToUpper(str[0]) + str.Substring(1);
     }
   }
 }

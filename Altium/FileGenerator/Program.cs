@@ -21,6 +21,7 @@ namespace Altium
     private static void GenerateFile(string filePath, long maxSize)
     {
       RecordGenerator stringGenerator = new RecordGenerator();
+      int prevPercent = 0;
       using(FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
       using(StreamWriter sw = new StreamWriter(fs))
       {
@@ -28,6 +29,12 @@ namespace Altium
         {
           sw.Write(s);
           sw.Write("\r\n");
+          int percent = ((int)((double)fs.Position / maxSize * 100));
+          if (percent != prevPercent && percent % 10 == 0)
+          {
+            prevPercent = percent;
+            Console.WriteLine(percent + "%");
+          }
         }
       }
     }
