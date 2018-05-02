@@ -4,36 +4,42 @@ using System.IO;
 
 namespace Altium.BigSorter
 {
+  /// <summary>
+  /// Reads records from stream.
+  /// </summary>
   public class RecordsReader
   {
     private readonly RecordParser _recordParser;
     private readonly RecordComparer _recordComparer;
     private readonly StreamReader _streamReader;
     private readonly long _bufferSizeInBytes;
-    private readonly int _readWhileEqualField;
+    private readonly int _readWhileSameFieldValue;
     private Record _recordAhead;
     private bool _hasRecordAhead;
 
-    public RecordsReader(StreamReader streamReader, long bufferSizeInBytes, int readWhileEqualToField = -1)
+    public RecordsReader(StreamReader streamReader, long bufferSizeInBytes, int readWhileSameFieldValue = -1)
     {
       _recordParser = new RecordParser();
       _recordComparer = new RecordComparer();
       _streamReader = streamReader;
       _bufferSizeInBytes = bufferSizeInBytes;
-      _readWhileEqualField = readWhileEqualToField;
+      _readWhileSameFieldValue = readWhileSameFieldValue;
     }
 
     public bool IsLastBlock { get; private set; }
 
     public bool IsEnd { get { return _streamReader.EndOfStream && !_hasRecordAhead; } }
 
+    /// <summary>
+    /// Reads records by blocks of specific size returning one after another.
+    /// </summary>
     public IEnumerable<RecordsBuffer> ReadBlocks()
     {
       IsLastBlock = false;
       RecordsBuffer recordsBuffer = new RecordsBuffer(_bufferSizeInBytes);
       Record? recordToCompare = null;
-      IRecordFieldComparer comparer = _readWhileEqualField != -1
-        ? _recordComparer.CreateRecordFieldComparer(_readWhileEqualField)
+      IRecordFieldComparer comparer = _readWhileSameFieldValue != -1
+        ? _recordComparer.CreateRecordFieldComparer(_readWhileSameFieldValue)
         : null;
 
       if (_hasRecordAhead)
@@ -48,7 +54,7 @@ namespace Altium.BigSorter
       {
         Record record = _recordParser.Parse(line);
 
-        if (_readWhileEqualField >= 0)
+        if (_readWhileSameFieldValue >= 0)
         {
           if (recordToCompare == null)
           {
@@ -81,6 +87,9 @@ namespace Altium.BigSorter
       }
     }
 
+    /// <summary>
+    /// Reads records by blocks of specific size and enumerate all records one after another.
+    /// </summary>
     public IEnumerable<Record> ReadRecords()
     {
       IEnumerable<RecordsBuffer> blocks = ReadBlocks();

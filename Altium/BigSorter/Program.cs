@@ -28,8 +28,8 @@ namespace Altium.BigSorter
       using(FileStream output = new FileStream(outputPath, FileMode.Create))
       using(FileTempStreams tempStreams = new FileTempStreams(tempDir))
       {
-        BigTableSorter bigTableSorter = new BigTableSorter(bufferSize);
-        bigTableSorter.Sort(input, new int[] { 1, 0 }, output, tempStreams);
+        BigTableSorter bigTableSorter = new BigTableSorter(tempStreams, bufferSize);
+        bigTableSorter.Sort(input, new int[] { 1, 0 }, output);
       }
       if (Directory.Exists(tempDir))
         Directory.Delete(tempDir, true);

@@ -1,5 +1,8 @@
 namespace Altium.BigSorter
 {
+  /// <summary>
+  /// Converts record to a string or convert a string to a record.
+  /// </summary>
   public class RecordParser
   {
     public Record Parse(string s)

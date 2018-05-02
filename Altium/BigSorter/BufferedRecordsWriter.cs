@@ -3,6 +3,10 @@ using System.IO;
 
 namespace Altium.BigSorter
 {
+  /// <summary>
+  /// Writes records adding them into buffer first and then when buffer is filled
+  /// flushed it to a stream.
+  /// </summary>
   public class BufferedRecordsWriter : IDisposable
   {
     private readonly RecordsWriter _recordsWriter;
@@ -16,6 +20,10 @@ namespace Altium.BigSorter
       _recordsBuffer = new RecordsBuffer(bufferSizeInBytes);
     }
 
+    /// <summary>
+    /// Writes records adding them into buffer first and then when buffer is filled
+    /// flushed it to a stream.
+    /// </summary>
     public void WriteRecord(Record record)
     {
       bool added = _recordsBuffer.AddRecord(record);
