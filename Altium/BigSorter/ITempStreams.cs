@@ -14,6 +14,11 @@ namespace Altium.BigSorter
     Stream CreateBlockStream(int blockIndex);
 
     /// <summary>
+    /// Opens previously created stream to read a sorted block of table.
+    /// </summary>
+    Stream OpenBlockStream(int blockIndex);
+
+    /// <summary>
     /// When table is sorted by more then one field then
     /// intermediate sorted table will be written into this stream.
     /// </summary>

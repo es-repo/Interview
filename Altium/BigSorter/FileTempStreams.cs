@@ -11,7 +11,6 @@ namespace Altium.BigSorter
   {
     private readonly string _tempDir;
     private readonly string _blocksDir;
-    private readonly List<string> _blockFiles;
     private readonly string _tempOutputFileName; 
 
     public FileTempStreams(string tempDir)
@@ -19,24 +18,26 @@ namespace Altium.BigSorter
       _tempDir =  tempDir;
       _blocksDir = Path.Combine(tempDir, "blocks");
       _tempOutputFileName = Path.Combine(tempDir, "output.txt");
-      _blockFiles = new List<string>();
-      ClearBlocks();
+      Dispose();
     }
 
     public Stream CreateBlockStream(int blockIndex)
     {
       Directory.CreateDirectory(_blocksDir);
       string fn = Path.Combine(_blocksDir, GetBlockFileName(blockIndex));
-      _blockFiles.Add(fn);
-      FileStream fs = new FileStream(fn, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-      BufferedStream bs = new BufferedStream(fs);
-      return bs;
+      return new FileStream(fn, FileMode.CreateNew, FileAccess.Write);
+    }
+
+    public Stream OpenBlockStream(int blockIndex)
+    {
+      string fn = Path.Combine(_blocksDir, GetBlockFileName(blockIndex));
+      return new FileStream(fn, FileMode.Open, FileAccess.Read);
     }
 
     public Stream CreateTempOutputStream()
     {
       Directory.CreateDirectory(_tempDir);
-      FileStream fs = new FileStream(_tempOutputFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+      FileStream fs = new FileStream(_tempOutputFileName, FileMode.CreateNew, FileAccess.ReadWrite);
       BufferedStream bs = new BufferedStream(fs);
       return bs;
     }

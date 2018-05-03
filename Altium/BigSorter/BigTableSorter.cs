@@ -223,7 +223,7 @@ namespace Altium.BigSorter
         List<IEnumerator<Record>> blockRecordsEnumerators = new List<IEnumerator<Record>>();
         for (int i = 0; i < blockCount; i++)
         {
-          Stream blockStream = _tempStreams.CreateBlockStream(i);
+          Stream blockStream = _tempStreams.OpenBlockStream(i);
           blockStreams.Add(blockStream);
           StreamReader blockStreamReader = new StreamReader(blockStream);
           RecordsReader blockReader = new RecordsReader(blockStreamReader, blockSize);

@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -39,15 +39,18 @@ namespace Altium.BigSorter.Tests
 
     public Stream CreateBlockStream(int blockIndex)
     {
-      if (!_blocks.ContainsKey(blockIndex))
-      {
-        _blocks.TryAdd(blockIndex, null);
-        return new MemoryStreamWithOnDisposeHandler(ms =>
-        {
-          _blocks[blockIndex] = ms.ToArray();
-        });
-      }
+      if (_blocks.ContainsKey(blockIndex))
+        throw new InvalidOperationException($"Block {blockIndex} already was created");
 
+      _blocks.TryAdd(blockIndex, null);
+      return new MemoryStreamWithOnDisposeHandler(ms =>
+      {
+        _blocks[blockIndex] = ms.ToArray();
+      });
+    }
+
+    public Stream OpenBlockStream(int blockIndex)
+    {
       return new MemoryStream(_blocks[blockIndex]);
     }
 
@@ -60,8 +63,7 @@ namespace Altium.BigSorter.Tests
       });
     }
 
-    public void Dispose()
-    { }
+    public void Dispose() { }
   }
 
   public class BigTableSorterTests
@@ -219,7 +221,6 @@ namespace Altium.BigSorter.Tests
       MemoryStream input = StringsToStream(records);
       MemoryStream output = new MemoryStream();
 
-      
       tableSorter.Sort(input, 1, output);
 
       Assert.Empty(tempStreams.Blocks);
