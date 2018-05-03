@@ -9,8 +9,7 @@ namespace Altium.BigSorter
     static void Main(string[] args)
     {
       string inputPath = args.Length > 0 ? args[0] : @"1gb.txt";
-      string outputPath = Path.GetFileNameWithoutExtension(inputPath) + "-sorted" +
-        Path.GetExtension(inputPath);
+      string outputPath = GetOutputPath(inputPath);
       long bufferSize = args.Length > 1 ? long.Parse(args[1]) : 1024L * 1024 * 1024;
 
       Stopwatch sw = new Stopwatch();
@@ -23,7 +22,7 @@ namespace Altium.BigSorter
 
     private static void SortTable(string inputPath, string outputPath, long bufferSize)
     {
-      string tempDir = "~Temp";
+      string tempDir = GetTempDirPath(inputPath);
       using(FileStream input = new FileStream(inputPath, FileMode.Open))
       using(FileStream output = new FileStream(outputPath, FileMode.Create))
       using(FileTempStreams tempStreams = new FileTempStreams(tempDir))
@@ -33,6 +32,18 @@ namespace Altium.BigSorter
       }
       if (Directory.Exists(tempDir))
         Directory.Delete(tempDir, true);
+    }
+
+    private static string GetOutputPath(string inputPath)
+    {
+      return Path.Combine(Path.GetDirectoryName(inputPath),
+        Path.GetFileNameWithoutExtension(inputPath) + "-sorted" +
+        Path.GetExtension(inputPath));
+    }
+
+    private static string GetTempDirPath(string inputPath)
+    {
+      return Path.Combine(Path.GetDirectoryName(inputPath), "~Temp");
     }
   }
 }
